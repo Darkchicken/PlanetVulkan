@@ -4,7 +4,7 @@ Copyright © 2017, Josh Shucker
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include "Window.h"
+#include <PlanetVulkan/Window.h>
 
 #pragma once
 class TestGame
