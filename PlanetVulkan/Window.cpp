@@ -8,7 +8,7 @@ Handles window creation and settings
 #include "Window.h"
 #include <GLFW/glfw3.h>
 
-namespace PlanetVulkan
+namespace PlanetVulkanEngine
 {
 
 	Window::Window()

@@ -7,7 +7,7 @@ Copyright © 2017, Josh Shucker
 #include <GLFW/glfw3.h>
 
 
-namespace PlanetVulkan 
+namespace PlanetVulkanEngine 
 {
 	class Window
 	{

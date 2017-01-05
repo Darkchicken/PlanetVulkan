@@ -5,6 +5,7 @@ Copyright © 2017, Josh Shucker
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <PlanetVulkan/Window.h>
+#include <PlanetVulkan/PlanetVulkan.h>
 
 #pragma once
 class TestGame
@@ -22,6 +23,7 @@ private:
 	void GameLoop();
 
 	//Member variables
-	PlanetVulkan::Window m_window; //creates window for game
+	PlanetVulkanEngine::Window m_window; //creates window for game
+	PlanetVulkanEngine::PlanetVulkan m_engine; //creates window for game
 };
 

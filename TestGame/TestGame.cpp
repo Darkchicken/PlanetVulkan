@@ -31,7 +31,12 @@ Handles Window creation
 */
 void TestGame::InitSystems()
 {
+	//create window for application
 	m_window.Create();
+	//initialize vulkan
+	m_engine.initVulkan();
+	//begin game loop
+	GameLoop();
 }
 
 /*
