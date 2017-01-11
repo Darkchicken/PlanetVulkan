@@ -4,7 +4,6 @@ Copyright © 2017, Josh Shucker
 Handles window creation and settings
 */
 
-#define GLFW_INCLUDE_VULKAN
 #include "Window.h"
 #include <GLFW/glfw3.h>
 

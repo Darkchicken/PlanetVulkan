@@ -3,7 +3,6 @@ Copyright © 2017, Josh Shucker
 */
 
 #pragma once
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 

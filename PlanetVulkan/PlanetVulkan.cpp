@@ -4,6 +4,8 @@ Copyright © 2017, Josh Shucker
 Handles engine code
 */
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 #include "PlanetVulkan.h"
 #include <vector>
 namespace PlanetVulkanEngine
