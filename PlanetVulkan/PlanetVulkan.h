@@ -21,13 +21,13 @@ namespace PlanetVulkanEngine
 
 
 	private:
-
+		// creates a Vulkan instance
 		void createInstance();
-
+		// checks if requested layers are available
 		bool checkValidationLayerSupport();
-
+		// gets necessary extensions to create instance
 		std::vector<const char*> getRequiredExtensions();
-
+		// creates a callback instance
 		void setupDebugCallback();
 
 		VkResult CreateDebugReportCallbackEXT(
@@ -36,7 +36,7 @@ namespace PlanetVulkanEngine
 			const VkAllocationCallbacks* pAllocator,
 			VkDebugReportCallbackEXT* pCallback);
 
-		void DestroyDebugReportCallbackEXT(
+		static void DestroyDebugReportCallbackEXT(
 			VkInstance instance, 
 			VkDebugReportCallbackEXT callback, 
 			const VkAllocationCallbacks* pAllocator);
@@ -51,11 +51,12 @@ namespace PlanetVulkanEngine
 			const char* msg,
 			void* userData);
 
+		// handle to the vulkan instance
 		VDeleter<VkInstance> instance{ vkDestroyInstance };
-	
+		// handle to the debug callback
 		VDeleter<VkDebugReportCallbackEXT> callback{instance, DestroyDebugReportCallbackEXT};
 
-		///Validation Layer variables
+		// contains all validation layers requested
 		const std::vector<const char*> validationLayers = {"VK_LAYER_LUNARG_standard_validation"};
 
 #ifdef NDEBUG
