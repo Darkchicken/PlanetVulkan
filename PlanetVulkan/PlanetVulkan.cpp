@@ -9,6 +9,7 @@ Handles engine code
 #include "PlanetVulkan.h"
 #include <vector>
 #include <cstring>
+#include <map>
 
 namespace PlanetVulkanEngine
 {
@@ -26,6 +27,8 @@ namespace PlanetVulkanEngine
 	{
 		createInstance();
 		setupDebugCallback();
+		getPhysicalDevices();
+		createLogicalDevice();
 	}
 
 	void PlanetVulkan::createInstance()
@@ -67,19 +70,6 @@ namespace PlanetVulkanEngine
 		auto extensions = getRequiredExtensions();
 		createInfo.enabledExtensionCount = extensions.size();
 		createInfo.ppEnabledExtensionNames = extensions.data();
-
-		///check for extention support
-		/*
-		uint32_t extensionCount = 0;
-		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-		std::vector<VkExtensionProperties> extensions(extensionCount);
-		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-		std::cout << "available extensions:" << std::endl;
-		for (const auto& extension : extensions) 
-		{
-			std::cout << "\t" << extension.extensionName << std::endl;
-		}
-		*/
 
 		//Call to create Vulkan instance, replaces instance variable with created one. 
 		//Throws an error on failure
@@ -123,6 +113,102 @@ namespace PlanetVulkanEngine
 		return true;
 	}
 
+	void PlanetVulkan::getPhysicalDevices()
+	{
+		uint32_t physicalDeviceCount = 0;
+		vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
+
+		if(physicalDeviceCount == 0)
+		{ throw std::runtime_error("No devices with Vulkan support found"); }
+
+		std::vector<VkPhysicalDevice> foundPhysicalDevices(physicalDeviceCount);
+		vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, foundPhysicalDevices.data());
+
+		// map to hold devices and sort by rank
+		std::multimap<int, VkPhysicalDevice> rankedDevices;
+		// iterate through all devices and rate their suitability
+		for (const auto& currentDevice : foundPhysicalDevices) 
+		{
+			int score = rateDeviceSuitability(currentDevice);
+			rankedDevices.insert(std::make_pair(score, currentDevice));
+		}
+		// check to make sure the best candidate scored higher than 0
+		// rbegin points to last element of ranked devices(highest rated), first is its rating 
+		if (rankedDevices.rbegin()->first > 0)
+		{
+			// return the second value of the highest rated device (its VkPhysicalDevice component)
+			physicalDevice = rankedDevices.rbegin()->second;
+		}
+		else
+		{
+			throw std::runtime_error("No physical devices meet necessary criteria");
+		}
+	}
+
+	int PlanetVulkan::rateDeviceSuitability(VkPhysicalDevice deviceToRate)
+	{
+		int score = 0;
+
+		/// adjust score based on queue families 
+		//find an index of a queue family which contiains the necessary commands
+		QueueFamilyIndices indices = findQueueFamilies(deviceToRate);
+		//return a 0 score if this device has no suitable family
+		if(!indices.isComplete())
+		{return 0;}
+
+		// obtain the device features and properties of the current device being rated		
+		VkPhysicalDeviceProperties deviceProperties;
+		VkPhysicalDeviceFeatures deviceFeatures;		
+		vkGetPhysicalDeviceProperties(deviceToRate, &deviceProperties);
+		vkGetPhysicalDeviceFeatures(deviceToRate, &deviceFeatures);
+
+		///adjust score based on properties
+		// add a large score boost for discrete GPUs (dedicated graphics cards)
+		if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+		{
+			score += 1000;
+		}
+
+		// give a higher score to devices with a higher maximum texture size
+		score += deviceProperties.limits.maxImageDimension2D;
+
+		///adjust score based on features
+		//only allow a device if it supports geometry shaders
+		if(!deviceFeatures.geometryShader)
+		{return 0; } 
+
+
+		return score;	
+	}
+
+	QueueFamilyIndices PlanetVulkan::findQueueFamilies(VkPhysicalDevice device)
+	{
+		QueueFamilyIndices indices;
+
+		uint32_t queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(device,&queueFamilyCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+		// iterate through queue families to find one that supports VK_QUEUE_GRAPHICS_BIT
+		int i = 0;
+		for (const auto &queueFamily : queueFamilies)
+		{
+			if (queueFamily.queueCount > 0 && queueFamily.queueFlags && VK_QUEUE_GRAPHICS_BIT)
+			{
+				indices.graphicsFamily = i;
+			}
+
+			if(indices.isComplete())
+			{break; }
+
+			i++;
+		}
+
+		return indices;
+	}
+
 	//returns the required extensions, adds the callback extensions if enabled
 	std::vector<const char*> PlanetVulkan::getRequiredExtensions() 
 	{
@@ -139,6 +225,53 @@ namespace PlanetVulkanEngine
 		{extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);}
 
 		return extensions;
+	}
+
+	void PlanetVulkan::createLogicalDevice()
+	{
+		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+
+		VkDeviceQueueCreateInfo queueCreateInfo = {};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.pNext = nullptr;
+		queueCreateInfo.flags = 0;
+		queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
+		queueCreateInfo.queueCount = 1;
+		const float queuePriority = 1.0f;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+
+		// currently not initialized since we dont need certain features
+		VkPhysicalDeviceFeatures deviceFeatures = {};
+
+		VkDeviceCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = 0;
+		createInfo.queueCreateInfoCount = 1;
+		createInfo.pQueueCreateInfos = &queueCreateInfo;
+
+		if (enableValidationLayers)
+		{
+			createInfo.enabledLayerCount = validationLayers.size();
+			createInfo.ppEnabledLayerNames = validationLayers.data();
+		}
+		else
+		{
+			createInfo.enabledLayerCount = 0;
+			createInfo.ppEnabledLayerNames = nullptr;
+		}
+		createInfo.enabledExtensionCount = 0;
+		createInfo.ppEnabledExtensionNames = nullptr;
+		createInfo.pEnabledFeatures = &deviceFeatures;
+
+		// create logical device
+		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, logicalDevice.replace()) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create logical device");
+		}
+		
+		// get handle to graphics queue
+		vkGetDeviceQueue(logicalDevice, indices.graphicsFamily ,0, &graphicsQueue);
 	}
 
 	void PlanetVulkan::setupDebugCallback()
