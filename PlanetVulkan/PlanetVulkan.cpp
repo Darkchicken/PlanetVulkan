@@ -85,9 +85,7 @@ namespace PlanetVulkanEngine
 			std::cout << "Vulkan instance created successfully" << std::endl;
 		}
 		
-	}
-
-	
+	}	
 
 	void PlanetVulkan::createSurface()
 	{
@@ -117,7 +115,7 @@ namespace PlanetVulkanEngine
 		// iterate through all devices and rate their suitability
 		for (const auto& currentDevice : foundPhysicalDevices) 
 		{
-			int score = rateDeviceSuitability(currentDevice);
+			int score = deviceSelector.rateDeviceSuitability(currentDevice, surface);
 			rankedDevices.insert(std::make_pair(score, currentDevice));
 		}
 		// check to make sure the best candidate scored higher than 0
@@ -133,74 +131,7 @@ namespace PlanetVulkanEngine
 			throw std::runtime_error("No physical devices meet necessary criteria");
 		}
 	}
-
-	int PlanetVulkan::rateDeviceSuitability(VkPhysicalDevice deviceToRate)
-	{
-		int score = 0;
-
-		/// adjust score based on queue families 
-		//find an index of a queue family which contiains the necessary commands
-		QueueFamilyIndices indices = findQueueFamilies(deviceToRate);
-		//return a 0 score if this device has no suitable family
-		if(!indices.isComplete())
-		{return 0;}
-
-		// obtain the device features and properties of the current device being rated		
-		VkPhysicalDeviceProperties deviceProperties;
-		VkPhysicalDeviceFeatures deviceFeatures;		
-		vkGetPhysicalDeviceProperties(deviceToRate, &deviceProperties);
-		vkGetPhysicalDeviceFeatures(deviceToRate, &deviceFeatures);
-
-		///adjust score based on properties
-		// add a large score boost for discrete GPUs (dedicated graphics cards)
-		if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
-		{
-			score += 1000;
-		}
-
-		// give a higher score to devices with a higher maximum texture size
-		score += deviceProperties.limits.maxImageDimension2D;
-
-		///adjust score based on features
-		//only allow a device if it supports geometry shaders
-		if(!deviceFeatures.geometryShader)
-		{return 0; } 
-
-
-		return score;	
-	}
-
-	QueueFamilyIndices PlanetVulkan::findQueueFamilies(VkPhysicalDevice device)
-	{
-		QueueFamilyIndices indices;
-
-		uint32_t queueFamilyCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(device,&queueFamilyCount, nullptr);
-
-		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-		// iterate through queue families to find one that supports VK_QUEUE_GRAPHICS_BIT
-		int i = 0;
-		for (const auto &queueFamily : queueFamilies)
-		{
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-			//check for graphics and presentation support
-			if (queueFamily.queueCount > 0 && queueFamily.queueFlags && VK_QUEUE_GRAPHICS_BIT && presentSupport)
-			{
-
-				indices.familyIndex = i;
-			}
-
-			if(indices.isComplete())
-			{break; }
-
-			i++;
-		}
-
-		return indices;
-	}
+	
 
 	//returns the required extensions, adds the callback extensions if enabled
 	std::vector<const char*> PlanetVulkan::getRequiredExtensions() 
@@ -222,7 +153,7 @@ namespace PlanetVulkanEngine
 
 	void PlanetVulkan::createLogicalDevice()
 	{
-		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+		QueueFamilyIndices indices = deviceSelector.findQueueFamilies(physicalDevice, surface);
 
 		VkDeviceQueueCreateInfo queueCreateInfo = {};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;

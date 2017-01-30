@@ -10,20 +10,10 @@ Copyright © 2017, Josh Shucker
 
 #include "Window.h"
 #include "VDeleter.h"
+#include "DeviceSelector.h"
 namespace PlanetVulkanEngine
 {
-	//used to store index of a QueueFamily with particular qualities
-	struct QueueFamilyIndices
-	{
-		//index of respective graphics family
-		int familyIndex = -1;
-
-		//returns true if an index has been assigned
-		bool isComplete()
-		{
-			return familyIndex >= 0;
-		}
-	};
+	
 
 	class PlanetVulkan
 	{
@@ -49,10 +39,7 @@ namespace PlanetVulkanEngine
 		void createSurface();
 		// finds physical devices on system
 		void getPhysicalDevices();
-		// assign a score on how suitable a device is
-		int rateDeviceSuitability(VkPhysicalDevice deviceToRate);
-		// find queue families
-		QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+		
 		// creates logical device from selected physical device
 		void createLogicalDevice();
 
@@ -93,7 +80,7 @@ namespace PlanetVulkanEngine
 		// contains all validation layers requested
 		const std::vector<const char*> validationLayers = {"VK_LAYER_LUNARG_standard_validation"};
 
-		
+		DeviceSelector deviceSelector;
 
 #ifdef NDEBUG
 		const bool enableValidationLayers = false;

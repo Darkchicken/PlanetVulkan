@@ -148,11 +148,13 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DeviceSelector.cpp" />
     <ClCompile Include="PlanetVulkan.cpp" />
     <ClCompile Include="ValidationLayers.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DeviceSelector.h" />
     <ClInclude Include="PlanetVulkan.h" />
     <ClInclude Include="ValidationLayers.h" />
     <ClInclude Include="VDeleter.h" />
