@@ -15,7 +15,7 @@ namespace PlanetVulkanEngine
 		~Window();
 
 		int Create();
-
+		void WindowUpdate();
 		//the window object
 		GLFWwindow* window;
 

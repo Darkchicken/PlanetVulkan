@@ -25,8 +25,11 @@ namespace PlanetVulkanEngine
 
 	void PlanetVulkan::initVulkan()
 	{
+		//create window for application
+		windowObj.Create();
 		createInstance();
 		setupDebugCallback();
+		createSurface();
 		getPhysicalDevices();
 		createLogicalDevice();
 	}
@@ -84,33 +87,18 @@ namespace PlanetVulkanEngine
 		
 	}
 
-	//returns false if any of the layers are unsupported
-	bool PlanetVulkan::checkValidationLayerSupport() 
-	{
-		uint32_t layerCount;
-		// 1st call gets number of layers
-		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+	
 
-		std::vector<VkLayerProperties> availableLayers(layerCount);
-		// second call stores all layers
-		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-		//iterate through all validation layers 
-		for (const char* layerName : validationLayers) 
+	void PlanetVulkan::createSurface()
+	{
+		if (glfwCreateWindowSurface(instance, windowObj.window, nullptr, surface.replace()) != VK_SUCCESS)
 		{
-			bool layerFound = false;
-			//check if the layer is in available layers
-			for (const auto& layerProperties : availableLayers) 
-			{
-				if (strcmp(layerName, layerProperties.layerName) == 0) 
-				{
-					layerFound = true;
-					break;
-				}
-			}
-			if (!layerFound) 
-			{return false;}
+			throw std::runtime_error("Failed to create window surface");
 		}
-		return true;
+		else
+		{
+			std::cout << "Window surface created successfully"<<std::endl;
+		}
 	}
 
 	void PlanetVulkan::getPhysicalDevices()
@@ -138,6 +126,7 @@ namespace PlanetVulkanEngine
 		{
 			// return the second value of the highest rated device (its VkPhysicalDevice component)
 			physicalDevice = rankedDevices.rbegin()->second;
+			std::cout << "Physical device selected" << std::endl;
 		}
 		else
 		{
@@ -195,9 +184,13 @@ namespace PlanetVulkanEngine
 		int i = 0;
 		for (const auto &queueFamily : queueFamilies)
 		{
-			if (queueFamily.queueCount > 0 && queueFamily.queueFlags && VK_QUEUE_GRAPHICS_BIT)
+			VkBool32 presentSupport = false;
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+			//check for graphics and presentation support
+			if (queueFamily.queueCount > 0 && queueFamily.queueFlags && VK_QUEUE_GRAPHICS_BIT && presentSupport)
 			{
-				indices.graphicsFamily = i;
+
+				indices.familyIndex = i;
 			}
 
 			if(indices.isComplete())
@@ -235,7 +228,7 @@ namespace PlanetVulkanEngine
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.pNext = nullptr;
 		queueCreateInfo.flags = 0;
-		queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
+		queueCreateInfo.queueFamilyIndex = indices.familyIndex;
 		queueCreateInfo.queueCount = 1;
 		const float queuePriority = 1.0f;
 		queueCreateInfo.pQueuePriorities = &queuePriority;
@@ -269,9 +262,13 @@ namespace PlanetVulkanEngine
 		{
 			throw std::runtime_error("Failed to create logical device");
 		}
+		else
+		{
+			std::cout << "Logical device created successfully" << std::endl;
+		}
 		
 		// get handle to graphics queue
-		vkGetDeviceQueue(logicalDevice, indices.graphicsFamily ,0, &graphicsQueue);
+		vkGetDeviceQueue(logicalDevice, indices.familyIndex ,0, &displayQueue);
 	}
 
 	void PlanetVulkan::setupDebugCallback()
@@ -285,6 +282,40 @@ namespace PlanetVulkanEngine
 
 		if (CreateDebugReportCallbackEXT(instance, &createInfo, nullptr, callback.replace()) != VK_SUCCESS) 
 		{throw std::runtime_error("failed to set up debug callback!");}
+		else
+		{
+			std::cout << "Debug callback created successfully" << std::endl;
+		}
+	}
+
+	bool PlanetVulkan::checkValidationLayerSupport()
+	{
+		uint32_t layerCount;
+		// 1st call gets number of layers
+		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+		std::vector<VkLayerProperties> availableLayers(layerCount);
+		// second call stores all layers
+		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+		//iterate through all validation layers 
+		for (const char* layerName : validationLayers)
+		{
+			bool layerFound = false;
+			//check if the layer is in available layers
+			for (const auto& layerProperties : availableLayers)
+			{
+				if (strcmp(layerName, layerProperties.layerName) == 0)
+				{
+					layerFound = true;
+					break;
+				}
+			}
+			if (!layerFound)
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
 	VkResult PlanetVulkan::CreateDebugReportCallbackEXT(

@@ -12,6 +12,7 @@ namespace PlanetVulkanEngine
 
 	Window::Window()
 	{
+
 	}
 
 
@@ -31,5 +32,15 @@ namespace PlanetVulkanEngine
 		window = glfwCreateWindow(windowWidth, windowHeight, "Planet Vulkan", nullptr, nullptr);
 
 		return 0;
+	}
+
+	void Window::WindowUpdate()
+	{
+		while (!glfwWindowShouldClose(window)) 
+		{
+			glfwPollEvents();
+		}
+
+		//glfwDestroyWindow(window);
 	}
 }

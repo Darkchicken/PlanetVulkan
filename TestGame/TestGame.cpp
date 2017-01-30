@@ -26,12 +26,10 @@ void TestGame::Run()
 
 
 /*
-Handles Window creation
+Handles Vulkan Engine initialization
 */
 void TestGame::InitSystems()
 {
-	//create window for application
-	m_window.Create();
 	//initialize vulkan
 	m_engine.initVulkan();
 	//begin game loop
@@ -43,8 +41,5 @@ Game loop runs constantly until application exit
 */
 void TestGame::GameLoop()
 {
-	while (!glfwWindowShouldClose(m_window.window)) 
-	{
-		glfwPollEvents();
-	}
+	m_engine.windowObj.WindowUpdate();
 }

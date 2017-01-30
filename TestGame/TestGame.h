@@ -20,7 +20,6 @@ private:
 	void GameLoop();
 
 	//Member variables
-	PlanetVulkanEngine::Window m_window; //creates window for game
 	PlanetVulkanEngine::PlanetVulkan m_engine; //creates window for game
 };
 

@@ -8,6 +8,7 @@ Copyright © 2017, Josh Shucker
 #include <stdexcept>
 #include <vector>
 
+#include "Window.h"
 #include "VDeleter.h"
 namespace PlanetVulkanEngine
 {
@@ -15,12 +16,12 @@ namespace PlanetVulkanEngine
 	struct QueueFamilyIndices
 	{
 		//index of respective graphics family
-		int graphicsFamily = -1;
+		int familyIndex = -1;
 
 		//returns true if an index has been assigned
 		bool isComplete()
 		{
-			return graphicsFamily >= 0;
+			return familyIndex >= 0;
 		}
 	};
 
@@ -32,6 +33,8 @@ namespace PlanetVulkanEngine
 
 		void initVulkan();
 
+		Window windowObj; //creates window for game
+
 
 	private:
 		// creates a Vulkan instance
@@ -42,6 +45,8 @@ namespace PlanetVulkanEngine
 		std::vector<const char*> getRequiredExtensions();
 		// creates a callback instance
 		void setupDebugCallback();
+		// creates surface to display images
+		void createSurface();
 		// finds physical devices on system
 		void getPhysicalDevices();
 		// assign a score on how suitable a device is
@@ -81,10 +86,14 @@ namespace PlanetVulkanEngine
 		// handle to the created logical device
 		VDeleter<VkDevice> logicalDevice{vkDestroyDevice};
 		// handle to the graphics queue 
-		VkQueue graphicsQueue;
+		VkQueue displayQueue;
+		// handle to the surface
+		VDeleter<VkSurfaceKHR> surface{instance, vkDestroySurfaceKHR };
 
 		// contains all validation layers requested
 		const std::vector<const char*> validationLayers = {"VK_LAYER_LUNARG_standard_validation"};
+
+		
 
 #ifdef NDEBUG
 		const bool enableValidationLayers = false;

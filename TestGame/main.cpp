@@ -5,8 +5,6 @@
 	Calls the run function in TestGame to start application
 	Throws an exception in case of failure
 	The game is currently just a test application
-
-	**TODO move to own project file**
 */
 
 #include <iostream>

@@ -149,10 +149,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PlanetVulkan.cpp" />
+    <ClCompile Include="ValidationLayers.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PlanetVulkan.h" />
+    <ClInclude Include="ValidationLayers.h" />
     <ClInclude Include="VDeleter.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
