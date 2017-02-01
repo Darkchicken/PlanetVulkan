@@ -38,9 +38,7 @@ namespace PlanetVulkanEngine
 	{
 		//check for validation layers
 		if (enableValidationLayers && !checkValidationLayerSupport())
-		{
-			throw std::runtime_error("validation layers requested, but no available");
-		};
+		{throw std::runtime_error("validation layers requested, but no available");}
 
 		///set application info for Vulkan instance
 		VkApplicationInfo appInfo = {};
@@ -58,7 +56,6 @@ namespace PlanetVulkanEngine
 		createInfo.pNext = nullptr;
 		createInfo.flags = 0;
 		createInfo.pApplicationInfo = &appInfo;
-
 		if(enableValidationLayers)
 		{
 			createInfo.enabledLayerCount = validationLayers.size();
@@ -69,34 +66,54 @@ namespace PlanetVulkanEngine
 			createInfo.enabledLayerCount = 0;
 			createInfo.ppEnabledLayerNames = nullptr;
 		}
-		
 		auto extensions = getRequiredExtensions();
 		createInfo.enabledExtensionCount = extensions.size();
 		createInfo.ppEnabledExtensionNames = extensions.data();
-
 		//Call to create Vulkan instance, replaces instance variable with created one. 
 		//Throws an error on failure
 		if (vkCreateInstance(&createInfo, nullptr, instance.replace()) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create instance!");
-		}
+		{throw std::runtime_error("failed to create instance!");}
 		else
-		{
-			std::cout << "Vulkan instance created successfully" << std::endl;
-		}
-		
+		{std::cout << "Vulkan instance created successfully" << std::endl;}	
 	}	
+
+	//returns the required extensions, adds the callback extensions if enabled
+	std::vector<const char*> PlanetVulkan::getRequiredExtensions()
+	{
+		std::vector<const char*> extensions;
+		unsigned int glfwExtensionCount = 0;
+		const char** glfwExtensions;
+		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+		for (unsigned int i = 0; i < glfwExtensionCount; i++)
+		{extensions.push_back(glfwExtensions[i]);}
+
+		if (enableValidationLayers)
+		{extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);}
+		return extensions;
+	}
+
+	void PlanetVulkan::setupDebugCallback()
+	{
+		if (!enableValidationLayers) return;
+
+		VkDebugReportCallbackCreateInfoEXT createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+		createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+		createInfo.pfnCallback = debugCallback;
+
+		if (CreateDebugReportCallbackEXT(instance, &createInfo, nullptr, callback.replace()) != VK_SUCCESS)
+		{throw std::runtime_error("failed to set up debug callback!");}
+		else
+		{std::cout << "Debug callback created successfully" << std::endl;}
+	}
 
 	void PlanetVulkan::createSurface()
 	{
 		if (glfwCreateWindowSurface(instance, windowObj.window, nullptr, surface.replace()) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create window surface");
-		}
+		{throw std::runtime_error("Failed to create window surface");}
 		else
-		{
-			std::cout << "Window surface created successfully"<<std::endl;
-		}
+		{std::cout << "Window surface created successfully"<<std::endl;}
 	}
 
 	void PlanetVulkan::getPhysicalDevices()
@@ -115,7 +132,7 @@ namespace PlanetVulkanEngine
 		// iterate through all devices and rate their suitability
 		for (const auto& currentDevice : foundPhysicalDevices) 
 		{
-			int score = deviceSelector.rateDeviceSuitability(currentDevice, surface);
+			int score = rateDeviceSuitability(currentDevice);
 			rankedDevices.insert(std::make_pair(score, currentDevice));
 		}
 		// check to make sure the best candidate scored higher than 0
@@ -132,28 +149,72 @@ namespace PlanetVulkanEngine
 		}
 	}
 	
-
-	//returns the required extensions, adds the callback extensions if enabled
-	std::vector<const char*> PlanetVulkan::getRequiredExtensions() 
+	int PlanetVulkan::rateDeviceSuitability(VkPhysicalDevice deviceToRate)
 	{
-		std::vector<const char*> extensions;
+		int score = 0;
 
-		unsigned int glfwExtensionCount = 0;
-		const char** glfwExtensions;
-		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+		/// adjust score based on queue families 
+		//find an index of a queue family which contiains the necessary commands
+		QueueFamilyIndices indices = findQueueFamilies(deviceToRate);
+		//return a 0 score if this device has no suitable family
+		if (!indices.isComplete())
+		{
+			return 0;
+		}
 
-		for (unsigned int i = 0; i < glfwExtensionCount; i++) 
-		{extensions.push_back(glfwExtensions[i]);}
+		// obtain the device features and properties of the current device being rated		
+		VkPhysicalDeviceProperties deviceProperties;
+		VkPhysicalDeviceFeatures deviceFeatures;
+		vkGetPhysicalDeviceProperties(deviceToRate, &deviceProperties);
+		vkGetPhysicalDeviceFeatures(deviceToRate, &deviceFeatures);
 
-		if (enableValidationLayers) 
-		{extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);}
+		///adjust score based on properties
+		// add a large score boost for discrete GPUs (dedicated graphics cards)
+		if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+		{
+			score += 1000;
+		}
 
-		return extensions;
+		// give a higher score to devices with a higher maximum texture size
+		score += deviceProperties.limits.maxImageDimension2D;
+
+		///adjust score based on features
+		//only allow a device if it supports geometry shaders
+		if (!deviceFeatures.geometryShader)
+		{
+			return 0;
+		}
+		return score;
+	}
+
+	QueueFamilyIndices PlanetVulkan::findQueueFamilies(VkPhysicalDevice device)
+	{
+		QueueFamilyIndices indices;
+		uint32_t queueFamilyCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+		// iterate through queue families to find one that supports VK_QUEUE_GRAPHICS_BIT
+		int i = 0;
+		for (const auto &queueFamily : queueFamilies)
+		{
+			VkBool32 presentSupport = false;
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+			//check for graphics and presentation support
+			if (queueFamily.queueCount > 0 && queueFamily.queueFlags && VK_QUEUE_GRAPHICS_BIT && presentSupport)
+			{indices.familyIndex = i;}
+
+			if (indices.isComplete())
+			{break;}
+			i++;
+		}
+		return indices;
 	}
 
 	void PlanetVulkan::createLogicalDevice()
 	{
-		QueueFamilyIndices indices = deviceSelector.findQueueFamilies(physicalDevice, surface);
+		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
 		VkDeviceQueueCreateInfo queueCreateInfo = {};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -173,7 +234,6 @@ namespace PlanetVulkanEngine
 		createInfo.flags = 0;
 		createInfo.queueCreateInfoCount = 1;
 		createInfo.pQueueCreateInfos = &queueCreateInfo;
-
 		if (enableValidationLayers)
 		{
 			createInfo.enabledLayerCount = validationLayers.size();
@@ -187,36 +247,13 @@ namespace PlanetVulkanEngine
 		createInfo.enabledExtensionCount = 0;
 		createInfo.ppEnabledExtensionNames = nullptr;
 		createInfo.pEnabledFeatures = &deviceFeatures;
-
 		// create logical device
 		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, logicalDevice.replace()) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create logical device");
-		}
+		{throw std::runtime_error("Failed to create logical device");}
 		else
-		{
-			std::cout << "Logical device created successfully" << std::endl;
-		}
-		
+		{std::cout << "Logical device created successfully" << std::endl;}	
 		// get handle to graphics queue
 		vkGetDeviceQueue(logicalDevice, indices.familyIndex ,0, &displayQueue);
-	}
-
-	void PlanetVulkan::setupDebugCallback()
-	{
-		if (!enableValidationLayers) return;
-
-		VkDebugReportCallbackCreateInfoEXT createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-		createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
-		createInfo.pfnCallback = debugCallback;
-
-		if (CreateDebugReportCallbackEXT(instance, &createInfo, nullptr, callback.replace()) != VK_SUCCESS) 
-		{throw std::runtime_error("failed to set up debug callback!");}
-		else
-		{
-			std::cout << "Debug callback created successfully" << std::endl;
-		}
 	}
 
 	bool PlanetVulkan::checkValidationLayerSupport()
@@ -249,42 +286,6 @@ namespace PlanetVulkanEngine
 		return true;
 	}
 
-	VkResult PlanetVulkan::CreateDebugReportCallbackEXT(
-		VkInstance instance, 
-		const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, 
-		const VkAllocationCallbacks* pAllocator, 
-		VkDebugReportCallbackEXT* pCallback) 
-	{
-		auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
-		if (func != nullptr) 
-		{return func(instance, pCreateInfo, pAllocator, pCallback);}
-		else 
-		{return VK_ERROR_EXTENSION_NOT_PRESENT;}
-	}
-
-	void PlanetVulkan::DestroyDebugReportCallbackEXT(
-		VkInstance instance, 
-		VkDebugReportCallbackEXT callback, 
-		const VkAllocationCallbacks* pAllocator) 
-	{
-		auto func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
-		if (func != nullptr) 
-		{func(instance, callback, pAllocator);}
-	}
-
-	VKAPI_ATTR VkBool32 VKAPI_CALL PlanetVulkan::debugCallback(
-		VkDebugReportFlagsEXT flags,
-		VkDebugReportObjectTypeEXT objType,
-		uint64_t obj,
-		size_t location,
-		int32_t code,
-		const char* layerPrefix,
-		const char* msg,
-		void* userData) 
-	{
-		std::cerr << "validation layer: " << msg << std::endl;
-		return VK_FALSE;
-	}
 }
 
 
