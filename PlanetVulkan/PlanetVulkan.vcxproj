@@ -153,7 +153,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PlanetVulkan.h" />
-    <ClInclude Include="ValidationLayers.h" />
     <ClInclude Include="VDeleter.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>

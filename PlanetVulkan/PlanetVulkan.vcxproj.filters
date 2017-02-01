@@ -35,8 +35,5 @@
     <ClInclude Include="VDeleter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ValidationLayers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>
