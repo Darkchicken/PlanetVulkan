@@ -25,6 +25,14 @@ namespace PlanetVulkanEngine
 		}
 	};
 
+	// used to store data for the swap chain
+	struct SwapChainSupportDetails
+	{
+		VkSurfaceCapabilitiesKHR capabilities;
+		std::vector<VkSurfaceFormatKHR> formats;
+		std::vector<VkPresentModeKHR> presentModes;
+	};
+
 	class PlanetVulkan
 	{
 	public:
@@ -53,6 +61,16 @@ namespace PlanetVulkanEngine
 		int rateDeviceSuitability(VkPhysicalDevice deviceToRate);
 		// find queue families of a physical device
 		QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+		// find data for the swap chain
+		SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+		// choose a surface format for the swap chain
+		VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+		// choose a present mode for the swap chain
+		VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes);
+		// choose a swap Extent for the swap chain
+		VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+		// checks for extension support
+		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 		// creates logical device from selected physical device
 		void createLogicalDevice();		
 
@@ -72,6 +90,8 @@ namespace PlanetVulkanEngine
 
 		// contains all validation layers requested
 		const std::vector<const char*> validationLayers = { "VK_LAYER_LUNARG_standard_validation" };
+		// contains all device extensions
+		const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 
 		VkResult CreateDebugReportCallbackEXT(

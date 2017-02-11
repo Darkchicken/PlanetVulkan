@@ -10,6 +10,7 @@ Handles engine code
 #include <vector>
 #include <cstring>
 #include <map>
+#include <algorithm>
 
 namespace PlanetVulkanEngine
 {
@@ -156,11 +157,18 @@ namespace PlanetVulkanEngine
 		/// adjust score based on queue families 
 		//find an index of a queue family which contiains the necessary commands
 		QueueFamilyIndices indices = findQueueFamilies(deviceToRate);
+		//check if the requested extensions are supported
+		bool extensionsSupported = checkDeviceExtensionSupport(deviceToRate);
 		//return a 0 score if this device has no suitable family
-		if (!indices.isComplete())
-		{
-			return 0;
-		}
+		if (!indices.isComplete() || !extensionsSupported)
+		{return 0;}
+
+		/// check if this device has an adequate swap chain
+		bool swapChainAdequate = false;
+		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(deviceToRate);
+		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+		if (!swapChainAdequate)
+		{return 0;}
 
 		// obtain the device features and properties of the current device being rated		
 		VkPhysicalDeviceProperties deviceProperties;
@@ -212,6 +220,122 @@ namespace PlanetVulkanEngine
 		return indices;
 	}
 
+	// finds swap chain details for current device and returns them
+	SwapChainSupportDetails PlanetVulkan::querySwapChainSupport(VkPhysicalDevice device)
+	{
+		SwapChainSupportDetails details;
+		//sets capabilities variable on struct
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+		// sets formats vector on struct
+		uint32_t formatCount;
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+		if (formatCount != 0)
+		{
+			details.formats.resize(formatCount);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+		}
+		// sets presentModes vector on struct
+		uint32_t presentModeCount;
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+		if (presentModeCount != 0)
+		{
+			details.presentModes.resize(presentModeCount);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+		}
+
+		return details;
+	}
+
+	VkSurfaceFormatKHR PlanetVulkan::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+	{
+		// need to set format and color space for VkSurfaceFormatKHR
+
+		//if the surface has no preferred format it returns a single VkSurfaceFormatKHR entry and format == VK_FORMAT_UNDEFINED
+		if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED)
+		{
+			// format is common standard RGB format, 
+			return{ VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+		}
+
+		//if we cant choose any format, look through the list to see if the options we want are available
+		for (const auto& currentFormat : availableFormats)
+		{
+			if (currentFormat.format == VK_FORMAT_B8G8R8A8_UNORM && currentFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			{
+				return currentFormat;
+			}
+		}
+		//if both of these fail, just choose the first one available
+		return availableFormats[0];
+	}
+
+	VkPresentModeKHR PlanetVulkan::chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes)
+	{
+		// 4 modes available
+		//VK_PRESENT_MODE_IMMEDIATE_KHR,VK_PRESENT_MODE_FIFO_KHR,VK_PRESENT_MODE_FIFO_RELAXED_KHR,VK_PRESENT_MODE_MAILBOX_KHR
+		
+
+		for (const auto& currentMode : availablePresentModes)
+		{
+			if (currentMode == VK_PRESENT_MODE_MAILBOX_KHR) //< uses triple buffering
+			{
+				return currentMode;
+			}
+		}
+		//returns if nothing else available, only mode guaranteed to be present
+		return VK_PRESENT_MODE_FIFO_KHR;
+	}
+
+	// chooses resolution of swap chain images, should be about the same as window resolution
+	VkExtent2D PlanetVulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+	{
+		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+		{
+			return capabilities.currentExtent;
+		}
+		else
+		{
+			// find the extent that fits the window best between max and min image extent
+			VkExtent2D actualExtent = { windowObj.windowWidth, windowObj.windowHeight };
+			actualExtent.width = std::max(capabilities.minImageExtent.width,std::min(capabilities.maxImageExtent.width, actualExtent.width));
+			actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
+			return actualExtent;
+		}
+
+		
+	}
+
+	// checks if all requested extensions are available
+	// similar to checkValidationLayerSupport
+	bool PlanetVulkan::checkDeviceExtensionSupport(VkPhysicalDevice device)
+	{
+		uint32_t extensionCount;
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+		//iterate through all extensions requested
+		for (const char* currentExtension : deviceExtensions)
+		{
+			bool extensionFound = false;
+			//check if the extension is in the available extensions
+			for (const auto& extension : availableExtensions)
+			{
+				if (strcmp(currentExtension, extension.extensionName) == 0)
+				{
+					extensionFound = true;
+					break;
+				}
+			}
+			if (!extensionFound)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	void PlanetVulkan::createLogicalDevice()
 	{
 		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
@@ -244,8 +368,8 @@ namespace PlanetVulkanEngine
 			createInfo.enabledLayerCount = 0;
 			createInfo.ppEnabledLayerNames = nullptr;
 		}
-		createInfo.enabledExtensionCount = 0;
-		createInfo.ppEnabledExtensionNames = nullptr;
+		createInfo.enabledExtensionCount = deviceExtensions.size();
+		createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 		createInfo.pEnabledFeatures = &deviceFeatures;
 		// create logical device
 		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, logicalDevice.replace()) != VK_SUCCESS)

@@ -15,16 +15,17 @@ namespace PlanetVulkanEngine
 		~Window();
 
 		int Create();
-		void WindowUpdate();
 		//the window object
 		GLFWwindow* window;
+
+		//dimensions for window
+		const int windowWidth = 800;
+		const int windowHeight = 600;
 
 	private:
 		
 
-		//dimensions for window
-		int windowWidth = 800;
-		int windowHeight = 600;
+		
 		
 	};
 }

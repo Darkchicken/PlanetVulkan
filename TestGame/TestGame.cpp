@@ -41,5 +41,10 @@ Game loop runs constantly until application exit
 */
 void TestGame::GameLoop()
 {
-	m_engine.windowObj.WindowUpdate();
+	while (!glfwWindowShouldClose(m_engine.windowObj.window))
+	{
+		glfwPollEvents();
+	}
+
+	//glfwDestroyWindow(window);
 }

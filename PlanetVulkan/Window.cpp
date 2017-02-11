@@ -34,13 +34,4 @@ namespace PlanetVulkanEngine
 		return 0;
 	}
 
-	void Window::WindowUpdate()
-	{
-		while (!glfwWindowShouldClose(window)) 
-		{
-			glfwPollEvents();
-		}
-
-		//glfwDestroyWindow(window);
-	}
 }
