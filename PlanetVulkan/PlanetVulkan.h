@@ -72,7 +72,11 @@ namespace PlanetVulkanEngine
 		// checks for extension support
 		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 		// creates logical device from selected physical device
-		void createLogicalDevice();		
+		void createLogicalDevice();	
+		// creates swap chain to send images to
+		void createSwapChain();
+		// creates image views to reference swap chain images
+		void createImageViews();
 
 		///Handles to Vulkan components
 		// handle to the vulkan instance
@@ -87,6 +91,19 @@ namespace PlanetVulkanEngine
 		VDeleter<VkDevice> logicalDevice{vkDestroyDevice};
 		// handle to the graphics queue 
 		VkQueue displayQueue;
+		// handle to the swap chain
+		VDeleter<VkSwapchainKHR> swapChain{ logicalDevice, vkDestroySwapchainKHR };
+		// vector of swap chain images
+		std::vector<VkImage> swapChainImages;
+		// handle to all image views associated with swapChainImages
+		std::vector<VDeleter<VkImageView>> swapChainImageViews;
+
+		// stores chosen image format
+		VkFormat swapChainImageFormat;
+		// stores chosen image extent
+		VkExtent2D swapChainExtent;
+
+
 
 		// contains all validation layers requested
 		const std::vector<const char*> validationLayers = { "VK_LAYER_LUNARG_standard_validation" };
