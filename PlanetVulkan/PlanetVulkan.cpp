@@ -35,6 +35,7 @@ namespace PlanetVulkanEngine
 		createLogicalDevice();
 		createSwapChain();
 		createImageViews();
+		createGraphicsPipeline();
 	}
 
 	void PlanetVulkan::createInstance()
@@ -461,6 +462,54 @@ namespace PlanetVulkanEngine
 
 		std::cout << "Image views created successfully" << std::endl;
 
+	}
+
+	void PlanetVulkan::createGraphicsPipeline()
+	{
+		//read in vertex and fragment shader
+		auto vertShaderCode = readFile("shaders/vert.spv");
+		auto fragShaderCode = readFile("shaders/frag.spv");
+
+		//declare shader module objects
+		VDeleter<VkShaderModule> vertShaderModule{ logicalDevice, vkDestroyShaderModule };
+		VDeleter<VkShaderModule> fragShaderModule{ logicalDevice, vkDestroyShaderModule };
+		// call create function for each shader module
+		createShaderModule(vertShaderCode, vertShaderModule);
+		createShaderModule(fragShaderCode, fragShaderModule);
+
+		// vertex shader create info assignment
+		VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
+		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+		vertShaderStageInfo.module = vertShaderModule;
+		vertShaderStageInfo.pName = "main";
+
+		// fragment shader create info assignment
+		VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
+		fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		fragShaderStageInfo.module = fragShaderModule;
+		fragShaderStageInfo.pName = "main";
+
+		// store shader stage create infos in array
+		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+
+	}
+
+	void PlanetVulkan::createShaderModule(const std::vector<char>& code, VDeleter<VkShaderModule>& shaderModule)
+	{
+		VkShaderModuleCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		createInfo.codeSize = code.size();
+		// get proper size for uint32_t code
+		std::vector<uint32_t> codeAligned(code.size() / sizeof(uint32_t) + 1);
+		memcpy(codeAligned.data(), code.data(), code.size());
+		createInfo.pCode = codeAligned.data();
+		
+		if (vkCreateShaderModule(logicalDevice, &createInfo, nullptr, shaderModule.replace()) != VK_SUCCESS) 
+		{throw std::runtime_error("failed to create shader module!");}
+		else
+		{std::cout << "Shader created successfully!" << std::endl;}
 	}
 
 	bool PlanetVulkan::checkValidationLayerSupport()

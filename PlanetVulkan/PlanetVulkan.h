@@ -7,11 +7,32 @@ Copyright © 2017, Josh Shucker
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <fstream>
 
 #include "Window.h"
 #include "VDeleter.h"
 namespace PlanetVulkanEngine
 {
+	// read binary data from SPIR-V file
+	static std::vector<char> readFile(const std::string& filename)
+	{
+		std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+		if (!file.is_open())
+		{
+			throw std::runtime_error("failed to open file!");
+		}
+
+		// start read at end of file and check file size
+		size_t fileSize = (size_t)file.tellg();
+		std::vector<char> buffer(fileSize);
+		// set read back to beginning of file and read data
+		file.seekg(0);
+		file.read(buffer.data(), fileSize);
+		file.close();
+		return buffer;
+	}
+
 	//used to store index of a QueueFamily with particular qualities
 	struct QueueFamilyIndices
 	{
@@ -77,6 +98,10 @@ namespace PlanetVulkanEngine
 		void createSwapChain();
 		// creates image views to reference swap chain images
 		void createImageViews();
+		// creates the grahpics pipeline
+		void createGraphicsPipeline();
+		// creates shader modules for pipeline
+		void createShaderModule(const std::vector<char>& code, VDeleter<VkShaderModule>& shaderModule);
 
 		///Handles to Vulkan components
 		// handle to the vulkan instance
@@ -102,8 +127,6 @@ namespace PlanetVulkanEngine
 		VkFormat swapChainImageFormat;
 		// stores chosen image extent
 		VkExtent2D swapChainExtent;
-
-
 
 		// contains all validation layers requested
 		const std::vector<const char*> validationLayers = { "VK_LAYER_LUNARG_standard_validation" };
