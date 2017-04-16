@@ -98,6 +98,8 @@ namespace PlanetVulkanEngine
 		void createSwapChain();
 		// creates image views to reference swap chain images
 		void createImageViews();
+		// create render pass
+		void createRenderPass();
 		// creates the grahpics pipeline
 		void createGraphicsPipeline();
 		// creates shader modules for pipeline
@@ -122,8 +124,13 @@ namespace PlanetVulkanEngine
 		std::vector<VkImage> swapChainImages;
 		// handle to all image views associated with swapChainImages
 		std::vector<VDeleter<VkImageView>> swapChainImageViews;
+		// handle to the render pass object
+		VDeleter<VkRenderPass> renderPass{ logicalDevice, vkDestroyRenderPass };
 		// handle to the graphics pipeline layout
 		VDeleter<VkPipelineLayout> pipelineLayout{ logicalDevice, vkDestroyPipelineLayout };
+		// handle to the graphics pipeline
+		VDeleter<VkPipeline> graphicsPipeline{ logicalDevice, vkDestroyPipeline };
+
 
 		// stores chosen image format
 		VkFormat swapChainImageFormat;

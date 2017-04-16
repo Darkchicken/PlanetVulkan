@@ -35,6 +35,7 @@ namespace PlanetVulkanEngine
 		createLogicalDevice();
 		createSwapChain();
 		createImageViews();
+		createRenderPass();
 		createGraphicsPipeline();
 	}
 
@@ -464,6 +465,50 @@ namespace PlanetVulkanEngine
 
 	}
 
+	void PlanetVulkan::createRenderPass()
+	{
+		// color attachment struct
+		VkAttachmentDescription colorAttachment = {};
+		colorAttachment.format = swapChainImageFormat;
+		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		// reference to color attachment for subpass
+		VkAttachmentReference colorAttachmentRef = {};
+		colorAttachmentRef.attachment = 0;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		// subpass struct
+		VkSubpassDescription subpass = {};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorAttachmentRef;
+
+		// render pass info struct
+		VkRenderPassCreateInfo renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		renderPassInfo.attachmentCount = 1;
+		renderPassInfo.pAttachments = &colorAttachment;
+		renderPassInfo.subpassCount = 1;
+		renderPassInfo.pSubpasses = &subpass;
+
+		// create render pass
+		if (vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, renderPass.replace()) != VK_SUCCESS)
+		{
+			throw std::runtime_error("failed to create render pass!");
+		}
+		else
+		{
+			std::cout << "Render Pass created successfully" << std::endl;
+		}
+
+	}
+
 	void PlanetVulkan::createGraphicsPipeline()
 	{
 		//read in vertex and fragment shader
@@ -568,7 +613,7 @@ namespace PlanetVulkanEngine
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
-		// create graphics pipeline
+		// create graphics pipeline layout
 		if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutInfo, nullptr,pipelineLayout.replace()) != VK_SUCCESS) 
 		{
 			throw std::runtime_error("Failed to create pipeline layout!");
@@ -577,6 +622,35 @@ namespace PlanetVulkanEngine
 		{
 			std::cout << "Pipeline layout created successfully!" << std::endl;
 		}
+
+		// pipeline info struct 
+		VkGraphicsPipelineCreateInfo pipelineInfo = {};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipelineInfo.stageCount = 2;
+		pipelineInfo.pStages = shaderStages;
+		pipelineInfo.pVertexInputState = &vertexInputInfo;
+		pipelineInfo.pInputAssemblyState = &inputAssembly;
+		pipelineInfo.pVertexInputState = &vertexInputInfo;
+		pipelineInfo.pInputAssemblyState = &inputAssembly;
+		pipelineInfo.pViewportState = &viewportState;
+		pipelineInfo.pRasterizationState = &rasterizer;
+		pipelineInfo.pMultisampleState = &multisampling;
+		pipelineInfo.pColorBlendState = &colorBlending;
+		pipelineInfo.layout = pipelineLayout;
+		pipelineInfo.renderPass = renderPass;
+		pipelineInfo.subpass = 0;
+
+		// create graphics pipeline
+		if (vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, graphicsPipeline.replace()) != VK_SUCCESS) 
+		{
+			throw std::runtime_error("Failed to create graphics pipeline!");
+		}
+		else
+		{
+			std::cout << "Graphics Pipeline created successfully!" << std::endl;
+		}
+
+
 	}
 
 	void PlanetVulkan::createShaderModule(const std::vector<char>& code, VDeleter<VkShaderModule>& shaderModule)
