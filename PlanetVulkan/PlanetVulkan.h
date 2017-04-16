@@ -122,6 +122,8 @@ namespace PlanetVulkanEngine
 		std::vector<VkImage> swapChainImages;
 		// handle to all image views associated with swapChainImages
 		std::vector<VDeleter<VkImageView>> swapChainImageViews;
+		// handle to the graphics pipeline layout
+		VDeleter<VkPipelineLayout> pipelineLayout{ logicalDevice, vkDestroyPipelineLayout };
 
 		// stores chosen image format
 		VkFormat swapChainImageFormat;
