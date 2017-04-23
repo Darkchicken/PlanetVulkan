@@ -20,7 +20,6 @@ void TestGame::Run()
 {
 	InitSystems();
 
-	//begin game loop
 	GameLoop();
 }
 
@@ -32,19 +31,30 @@ void TestGame::InitSystems()
 {
 	//initialize vulkan
 	m_engine.initVulkan();
+	
+}
+
+void TestGame::GameLoop()
+{
 	//begin game loop
-	GameLoop();
+	m_engine.gameLoop();
 }
 
 /*
 Game loop runs constantly until application exit
 */
+
+/*
 void TestGame::GameLoop()
 {
 	while (!glfwWindowShouldClose(m_engine.windowObj.window))
 	{
 		glfwPollEvents();
+
+		drawFrame();
+
 	}
 
 	//glfwDestroyWindow(window);
 }
+*/

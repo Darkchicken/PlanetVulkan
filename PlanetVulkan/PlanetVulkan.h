@@ -62,6 +62,8 @@ namespace PlanetVulkanEngine
 
 		void initVulkan();
 
+		void gameLoop();
+
 		Window windowObj; //creates window for game
 
 
@@ -104,6 +106,17 @@ namespace PlanetVulkanEngine
 		void createGraphicsPipeline();
 		// creates shader modules for pipeline
 		void createShaderModule(const std::vector<char>& code, VDeleter<VkShaderModule>& shaderModule);
+		// creates framebuffers for swap chain
+		void createFramebuffers();
+		// create command pool
+		void createCommandPool();
+		// create a command buffer for each framebuffer
+		void createCommandBuffers();
+		// draw a frame
+		void drawFrame();
+		// create semaphores for graphics pipeline regulation
+		void createSemaphores();
+
 
 		///Handles to Vulkan components
 		// handle to the vulkan instance
@@ -130,6 +143,20 @@ namespace PlanetVulkanEngine
 		VDeleter<VkPipelineLayout> pipelineLayout{ logicalDevice, vkDestroyPipelineLayout };
 		// handle to the graphics pipeline
 		VDeleter<VkPipeline> graphicsPipeline{ logicalDevice, vkDestroyPipeline };
+		// vector of handles to framebuffers
+		std::vector<VDeleter<VkFramebuffer>> swapChainFramebuffers;
+		// handle to command pool
+		VDeleter<VkCommandPool> commandPool{ logicalDevice, vkDestroyCommandPool };
+		// vector of handles to command buffers
+		std::vector<VkCommandBuffer> commandBuffers;
+		// semaphore for when an image is available to render
+		VDeleter<VkSemaphore> imageAvailableSemaphore{ logicalDevice, vkDestroySemaphore };
+		// semaphore for when an image is finished rendering
+		VDeleter<VkSemaphore> renderFinishedSemaphore{ logicalDevice, vkDestroySemaphore };
+
+
+
+
 
 
 		// stores chosen image format
