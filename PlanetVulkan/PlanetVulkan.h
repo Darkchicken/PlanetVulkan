@@ -154,11 +154,6 @@ namespace PlanetVulkanEngine
 		// semaphore for when an image is finished rendering
 		VDeleter<VkSemaphore> renderFinishedSemaphore{ logicalDevice, vkDestroySemaphore };
 
-
-
-
-
-
 		// stores chosen image format
 		VkFormat swapChainImageFormat;
 		// stores chosen image extent
