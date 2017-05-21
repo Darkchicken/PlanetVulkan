@@ -11,6 +11,7 @@ Copyright © 2017, Josh Shucker
 
 #include "Window.h"
 #include "VDeleter.h"
+#include "PVSwapchain.h"
 namespace PlanetVulkanEngine
 {
 	// read binary data from SPIR-V file
@@ -45,7 +46,7 @@ namespace PlanetVulkanEngine
 			return familyIndex >= 0;
 		}
 	};
-
+	/*
 	// used to store data for the swap chain
 	struct SwapChainSupportDetails
 	{
@@ -53,6 +54,7 @@ namespace PlanetVulkanEngine
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
 	};
+	*/
 
 	class PlanetVulkan
 	{
@@ -107,7 +109,7 @@ namespace PlanetVulkanEngine
 		// creates shader modules for pipeline
 		void createShaderModule(const std::vector<char>& code, VDeleter<VkShaderModule>& shaderModule);
 		// creates framebuffers for swap chain
-		void createFramebuffers();
+		//void createFramebuffers();
 		// create command pool
 		void createCommandPool();
 		// create a command buffer for each framebuffer
@@ -132,11 +134,15 @@ namespace PlanetVulkanEngine
 		// handle to the graphics queue 
 		VkQueue displayQueue;
 		// handle to the swap chain
-		VDeleter<VkSwapchainKHR> swapChain{ logicalDevice, vkDestroySwapchainKHR };
+		//VDeleter<VkSwapchainKHR> swapChain{ logicalDevice, vkDestroySwapchainKHR };
+		PVSwapchain* swapchain;
+
 		// vector of swap chain images
-		std::vector<VkImage> swapChainImages;
+		//std::vector<VkImage> swapChainImages;
+
 		// handle to all image views associated with swapChainImages
-		std::vector<VDeleter<VkImageView>> swapChainImageViews;
+		//std::vector<VDeleter<VkImageView>> swapChainImageViews;
+
 		// handle to the render pass object
 		VDeleter<VkRenderPass> renderPass{ logicalDevice, vkDestroyRenderPass };
 		// handle to the graphics pipeline layout
@@ -144,7 +150,7 @@ namespace PlanetVulkanEngine
 		// handle to the graphics pipeline
 		VDeleter<VkPipeline> graphicsPipeline{ logicalDevice, vkDestroyPipeline };
 		// vector of handles to framebuffers
-		std::vector<VDeleter<VkFramebuffer>> swapChainFramebuffers;
+		//std::vector<VDeleter<VkFramebuffer>> swapChainFramebuffers;
 		// handle to command pool
 		VDeleter<VkCommandPool> commandPool{ logicalDevice, vkDestroyCommandPool };
 		// vector of handles to command buffers
@@ -155,9 +161,9 @@ namespace PlanetVulkanEngine
 		VDeleter<VkSemaphore> renderFinishedSemaphore{ logicalDevice, vkDestroySemaphore };
 
 		// stores chosen image format
-		VkFormat swapChainImageFormat;
+		//VkFormat swapChainImageFormat;
 		// stores chosen image extent
-		VkExtent2D swapChainExtent;
+		//VkExtent2D swapChainExtent;
 
 		// contains all validation layers requested
 		const std::vector<const char*> validationLayers = { "VK_LAYER_LUNARG_standard_validation" };

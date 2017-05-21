@@ -14,6 +14,7 @@ TestGame::TestGame()
 
 TestGame::~TestGame()
 {
+
 }
 
 void TestGame::Run()

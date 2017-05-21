@@ -22,6 +22,7 @@ namespace PlanetVulkanEngine
 
 	PlanetVulkan::~PlanetVulkan()
 	{
+		delete swapchain;
 	}
 
 	/*
@@ -36,11 +37,17 @@ namespace PlanetVulkanEngine
 		createSurface();
 		getPhysicalDevices();
 		createLogicalDevice();
-		createSwapChain();
-		createImageViews();
+		//Create new swapchain
+		swapchain = new PVSwapchain();
+		swapchain->create(&logicalDevice, &physicalDevice, &surface, &windowObj);
+
+		//createSwapChain();
+		//createImageViews();
 		createRenderPass();
 		createGraphicsPipeline();
-		createFramebuffers();
+
+		swapchain->createFramebuffers(&logicalDevice, &renderPass);
+		//createFramebuffers();
 		createCommandPool();
 		createCommandBuffers();
 		createSemaphores();
@@ -60,7 +67,6 @@ namespace PlanetVulkanEngine
 		}
 
 		vkDeviceWaitIdle(logicalDevice);
-
 		glfwDestroyWindow(windowObj.window);
 	}
 
@@ -408,7 +414,7 @@ namespace PlanetVulkanEngine
 		// get handle to graphics queue
 		vkGetDeviceQueue(logicalDevice, indices.familyIndex ,0, &displayQueue);
 	}
-
+	/*
 	void PlanetVulkan::createSwapChain()
 	{
 		// get support details for the swap chain to pass to helper functions
@@ -489,12 +495,12 @@ namespace PlanetVulkanEngine
 		std::cout << "Image views created successfully" << std::endl;
 
 	}
-
+	*/
 	void PlanetVulkan::createRenderPass()
 	{
 		// color attachment struct
 		VkAttachmentDescription colorAttachment = {};
-		colorAttachment.format = swapChainImageFormat;
+		colorAttachment.format = *swapchain->GetImageFormat();
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -591,15 +597,15 @@ namespace PlanetVulkanEngine
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = (float)swapChainExtent.width;
-		viewport.height = (float)swapChainExtent.height;
+		viewport.width = (float)swapchain->GetExtent()->width; //swapChainExtent.width;
+		viewport.height = (float)swapchain->GetExtent()->height;//swapChainExtent.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
 		// scissor rect struct
 		VkRect2D scissor = {};
 		scissor.offset = { 0, 0 };
-		scissor.extent = swapChainExtent;
+		scissor.extent = *swapchain->GetExtent();//swapChainExtent;
 
 		// viewport state struct
 		VkPipelineViewportStateCreateInfo viewportState = {};
@@ -705,6 +711,7 @@ namespace PlanetVulkanEngine
 		{std::cout << "Shader created successfully!" << std::endl;}
 	}
 
+	/*
 	void PlanetVulkan::createFramebuffers()
 	{
 		swapChainFramebuffers.resize(swapChainImageViews.size(), VDeleter<VkFramebuffer>{logicalDevice, vkDestroyFramebuffer});
@@ -731,6 +738,7 @@ namespace PlanetVulkanEngine
 
 		std::cout << "Framebuffers created successfully"<<std::endl;
 	}
+	*/
 
 	void PlanetVulkan::createCommandPool()
 	{
@@ -754,7 +762,7 @@ namespace PlanetVulkanEngine
 
 	void PlanetVulkan::createCommandBuffers()
 	{
-		commandBuffers.resize(swapChainFramebuffers.size());
+		commandBuffers.resize(swapchain->GetFramebufferSize());//swapChainFramebuffers.size());
 
 		VkCommandBufferAllocateInfo allocInfo = {};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -781,9 +789,9 @@ namespace PlanetVulkanEngine
 			VkRenderPassBeginInfo renderPassInfo = {};
 			renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			renderPassInfo.renderPass = renderPass;
-			renderPassInfo.framebuffer = swapChainFramebuffers[i];
+			renderPassInfo.framebuffer = *swapchain->GetFramebuffer(i);//swapChainFramebuffers[i];
 			renderPassInfo.renderArea.offset = { 0, 0 };
-			renderPassInfo.renderArea.extent = swapChainExtent;
+			renderPassInfo.renderArea.extent = *swapchain->GetExtent();//swapChainExtent;
 			VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 			renderPassInfo.clearValueCount = 1;
 			renderPassInfo.pClearValues = &clearColor;
@@ -822,7 +830,7 @@ namespace PlanetVulkanEngine
 	void PlanetVulkan::drawFrame()
 	{
 		uint32_t imageIndex;
-		vkAcquireNextImageKHR(logicalDevice, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+		vkAcquireNextImageKHR(logicalDevice, *swapchain->GetSwapchain(), std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -851,7 +859,7 @@ namespace PlanetVulkanEngine
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
-		VkSwapchainKHR swapChains[] = { swapChain };
+		VkSwapchainKHR swapChains[] = { *swapchain->GetSwapchain() };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &imageIndex;
