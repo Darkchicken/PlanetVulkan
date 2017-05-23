@@ -28,6 +28,8 @@ namespace PlanetVulkanEngine
 
 		//creates the swapchain
 		bool create(const VkDevice * logicalDevice, VkPhysicalDevice* physicalDevice, const VkSurfaceKHR* surface, Window* windowObj);//, VkImageView depthImageView);
+		void clear();
+
 		void createImageViews(const VkDevice* logicalDevice);
 		SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 		VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);

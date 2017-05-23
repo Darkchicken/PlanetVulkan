@@ -5,10 +5,15 @@ namespace PlanetVulkanEngine
 
 	PVSwapchain::PVSwapchain()
 	{
+
 	}
 
 
 	PVSwapchain::~PVSwapchain()
+	{
+		delete device;
+	}
+	void PVSwapchain::clear()
 	{
 		for (uint32_t i = 0; i < swapChainFramebuffers.size(); i++)
 		{

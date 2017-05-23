@@ -46,15 +46,7 @@ namespace PlanetVulkanEngine
 			return familyIndex >= 0;
 		}
 	};
-	/*
-	// used to store data for the swap chain
-	struct SwapChainSupportDetails
-	{
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> presentModes;
-	};
-	*/
+	
 
 	class PlanetVulkan
 	{
@@ -98,16 +90,13 @@ namespace PlanetVulkanEngine
 		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 		// creates logical device from selected physical device
 		void createLogicalDevice();	
-		// creates swap chain to send images to
-		void createSwapChain();
-		// creates image views to reference swap chain images
-		void createImageViews();
+		
 		// create render pass
 		void createRenderPass();
 		// creates the grahpics pipeline
 		void createGraphicsPipeline();
 		// creates shader modules for pipeline
-		void createShaderModule(const std::vector<char>& code, VDeleter<VkShaderModule>& shaderModule);
+		VkShaderModule createShaderModule(const std::vector<char>& code);
 		// creates framebuffers for swap chain
 		//void createFramebuffers();
 		// create command pool
@@ -118,52 +107,44 @@ namespace PlanetVulkanEngine
 		void drawFrame();
 		// create semaphores for graphics pipeline regulation
 		void createSemaphores();
+		// Recreates swap chain
+		void recreateSwapChain();
+		//cleans up at end of game loop
+		void cleanup();
 
 
 		///Handles to Vulkan components
 		// handle to the vulkan instance
-		VDeleter<VkInstance> instance{ vkDestroyInstance };
+		VkInstance instance;
 		// handle to the surface
-		VDeleter<VkSurfaceKHR> surface{ instance, vkDestroySurfaceKHR };
+		VkSurfaceKHR surface;
 		// handle to the debug callback
-		VDeleter<VkDebugReportCallbackEXT> callback{instance, DestroyDebugReportCallbackEXT};
+		VkDebugReportCallbackEXT callback;
 		// handle to the chosen physical device
 		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 		// handle to the created logical device
-		VDeleter<VkDevice> logicalDevice{vkDestroyDevice};
+		VkDevice logicalDevice;
 		// handle to the graphics queue 
 		VkQueue displayQueue;
-		// handle to the swap chain
-		//VDeleter<VkSwapchainKHR> swapChain{ logicalDevice, vkDestroySwapchainKHR };
+		// Pointer to the swapchain object
 		PVSwapchain* swapchain;
 
-		// vector of swap chain images
-		//std::vector<VkImage> swapChainImages;
-
-		// handle to all image views associated with swapChainImages
-		//std::vector<VDeleter<VkImageView>> swapChainImageViews;
-
 		// handle to the render pass object
-		VDeleter<VkRenderPass> renderPass{ logicalDevice, vkDestroyRenderPass };
+		VkRenderPass renderPass;
 		// handle to the graphics pipeline layout
-		VDeleter<VkPipelineLayout> pipelineLayout{ logicalDevice, vkDestroyPipelineLayout };
+		VkPipelineLayout pipelineLayout;
 		// handle to the graphics pipeline
-		VDeleter<VkPipeline> graphicsPipeline{ logicalDevice, vkDestroyPipeline };
-		// vector of handles to framebuffers
-		//std::vector<VDeleter<VkFramebuffer>> swapChainFramebuffers;
+		VkPipeline graphicsPipeline;
+		
 		// handle to command pool
-		VDeleter<VkCommandPool> commandPool{ logicalDevice, vkDestroyCommandPool };
+		VkCommandPool commandPool;
 		// vector of handles to command buffers
 		std::vector<VkCommandBuffer> commandBuffers;
 		// semaphore for when an image is available to render
-		VDeleter<VkSemaphore> imageAvailableSemaphore{ logicalDevice, vkDestroySemaphore };
+		VkSemaphore imageAvailableSemaphore;
 		// semaphore for when an image is finished rendering
-		VDeleter<VkSemaphore> renderFinishedSemaphore{ logicalDevice, vkDestroySemaphore };
+		VkSemaphore renderFinishedSemaphore;
 
-		// stores chosen image format
-		//VkFormat swapChainImageFormat;
-		// stores chosen image extent
-		//VkExtent2D swapChainExtent;
 
 		// contains all validation layers requested
 		const std::vector<const char*> validationLayers = { "VK_LAYER_LUNARG_standard_validation" };

@@ -53,6 +53,20 @@ namespace PlanetVulkanEngine
 		createSemaphores();
 	}
 
+	void PlanetVulkan::recreateSwapChain() 
+	{
+		vkDeviceWaitIdle(logicalDevice);
+
+		//Create new swapchain and image views
+		swapchain = new PVSwapchain();
+		swapchain->create(&logicalDevice, &physicalDevice, &surface, &windowObj);
+
+		createRenderPass();
+		createGraphicsPipeline();
+		swapchain->createFramebuffers(&logicalDevice, &renderPass);
+		createCommandBuffers();
+	}
+
 	/*
 	Game loop runs constantly until application exit
 	*/
@@ -67,7 +81,42 @@ namespace PlanetVulkanEngine
 		}
 
 		vkDeviceWaitIdle(logicalDevice);
+		cleanup();
+		
+	}
+
+	void PlanetVulkan::cleanup()
+	{
+		vkDestroySemaphore(logicalDevice, renderFinishedSemaphore, nullptr);
+		vkDestroySemaphore(logicalDevice, imageAvailableSemaphore, nullptr);
+
+		vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
+
+		/*
+		for (size_t i = 0; i < swapChainFramebuffers.size(); i++) 
+		{
+			vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
+		}
+		*/
+
+		vkDestroyPipeline(logicalDevice, graphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
+		vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
+		/*
+		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+			vkDestroyImageView(device, swapChainImageViews[i], nullptr);
+		}
+		*/
+
+		swapchain->clear();
+		vkDestroyDevice(logicalDevice, nullptr);
+		DestroyDebugReportCallbackEXT(instance, callback, nullptr);
+		vkDestroySurfaceKHR(instance, surface, nullptr);
+		vkDestroyInstance(instance, nullptr);
+
 		glfwDestroyWindow(windowObj.window);
+
+		glfwTerminate();
 	}
 
 	void PlanetVulkan::createInstance()
@@ -107,7 +156,7 @@ namespace PlanetVulkanEngine
 		createInfo.ppEnabledExtensionNames = extensions.data();
 		//Call to create Vulkan instance, replaces instance variable with created one. 
 		//Throws an error on failure
-		if (vkCreateInstance(&createInfo, nullptr, instance.replace()) != VK_SUCCESS)
+		if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)
 		{throw std::runtime_error("failed to create instance!");}
 		else
 		{std::cout << "Vulkan instance created successfully" << std::endl;}	
@@ -138,7 +187,7 @@ namespace PlanetVulkanEngine
 		createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
 		createInfo.pfnCallback = debugCallback;
 
-		if (CreateDebugReportCallbackEXT(instance, &createInfo, nullptr, callback.replace()) != VK_SUCCESS)
+		if (CreateDebugReportCallbackEXT(instance, &createInfo, nullptr, &callback) != VK_SUCCESS)
 		{throw std::runtime_error("failed to set up debug callback!");}
 		else
 		{std::cout << "Debug callback created successfully" << std::endl;}
@@ -146,7 +195,7 @@ namespace PlanetVulkanEngine
 
 	void PlanetVulkan::createSurface()
 	{
-		if (glfwCreateWindowSurface(instance, windowObj.window, nullptr, surface.replace()) != VK_SUCCESS)
+		if (glfwCreateWindowSurface(instance, windowObj.window, nullptr, &surface) != VK_SUCCESS)
 		{throw std::runtime_error("Failed to create window surface");}
 		else
 		{std::cout << "Window surface created successfully"<<std::endl;}
@@ -407,95 +456,14 @@ namespace PlanetVulkanEngine
 		createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 		createInfo.pEnabledFeatures = &deviceFeatures;
 		// create logical device
-		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, logicalDevice.replace()) != VK_SUCCESS)
+		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &logicalDevice) != VK_SUCCESS)
 		{throw std::runtime_error("Failed to create logical device");}
 		else
 		{std::cout << "Logical device created successfully" << std::endl;}	
 		// get handle to graphics queue
 		vkGetDeviceQueue(logicalDevice, indices.familyIndex ,0, &displayQueue);
 	}
-	/*
-	void PlanetVulkan::createSwapChain()
-	{
-		// get support details for the swap chain to pass to helper functions
-		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
-
-		/// use helper functions to retrieve optimal settings for swap chain
-		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-		VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-		VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
-
-		/// Initialize a create info struct for the swap chain
-		VkSwapchainCreateInfoKHR createInfo = {};
-		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = surface;
-
-		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-		if (swapChainSupport.capabilities.maxImageCount > 0 &&
-			imageCount > swapChainSupport.capabilities.maxImageCount) 
-		{imageCount = swapChainSupport.capabilities.maxImageCount;}
-
-		createInfo.minImageCount = imageCount;
-		createInfo.imageFormat = surfaceFormat.format;
-		createInfo.imageColorSpace = surfaceFormat.colorSpace;
-		createInfo.imageExtent = extent;
-		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		createInfo.presentMode = presentMode;
-		createInfo.clipped = VK_TRUE;
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-		// attempt to create swap chain
-		if (vkCreateSwapchainKHR(logicalDevice, &createInfo, nullptr, swapChain.replace()) != VK_SUCCESS) 
-		{throw std::runtime_error("Failed to create swap chain");}
-		else
-		{std::cout << "Swap chain created successfully" << std::endl;}
-
-		/// populate swap chain image vector
-		vkGetSwapchainImagesKHR(logicalDevice, swapChain, &imageCount, nullptr);
-		swapChainImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(logicalDevice, swapChain, &imageCount, swapChainImages.data());
-
-		/// store data for chosen surface format and extent
-		swapChainImageFormat = surfaceFormat.format;
-		swapChainExtent = extent;
-	}
-
-	void PlanetVulkan::createImageViews()
-	{
-		// resize vector to the size of the images vector, define the deleter function for each
-		swapChainImageViews.resize(swapChainImages.size(), VDeleter<VkImageView>{logicalDevice, vkDestroyImageView});
-		// iterate through each image and create an image view for each
-		for (uint32_t i = 0; i < swapChainImages.size(); i++) 
-		{
-			// define a create info struct for this image view
-			VkImageViewCreateInfo createInfo = {};
-			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			createInfo.image = swapChainImages[i];
-			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			createInfo.format = swapChainImageFormat;
-			createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-			createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			createInfo.subresourceRange.baseMipLevel = 0;
-			createInfo.subresourceRange.levelCount = 1;
-			createInfo.subresourceRange.baseArrayLayer = 0;
-			createInfo.subresourceRange.layerCount = 1;
-
-			// attempt to create the image view
-			if (vkCreateImageView(logicalDevice, &createInfo, nullptr, swapChainImageViews[i].replace()) != VK_SUCCESS) 
-			{throw std::runtime_error("Failed to create image views");}
-		}
-
-		std::cout << "Image views created successfully" << std::endl;
-
-	}
-	*/
+	
 	void PlanetVulkan::createRenderPass()
 	{
 		// color attachment struct
@@ -540,7 +508,7 @@ namespace PlanetVulkanEngine
 		renderPassInfo.pDependencies = &dependency;
 
 		// create render pass
-		if (vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, renderPass.replace()) != VK_SUCCESS)
+		if (vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
 		{
 			throw std::runtime_error("failed to create render pass!");
 		}
@@ -558,11 +526,11 @@ namespace PlanetVulkanEngine
 		auto fragShaderCode = readFile("shaders/frag.spv");
 
 		//declare shader module objects
-		VDeleter<VkShaderModule> vertShaderModule{ logicalDevice, vkDestroyShaderModule };
-		VDeleter<VkShaderModule> fragShaderModule{ logicalDevice, vkDestroyShaderModule };
+		VkShaderModule vertShaderModule;
+		VkShaderModule fragShaderModule;
 		// call create function for each shader module
-		createShaderModule(vertShaderCode, vertShaderModule);
-		createShaderModule(fragShaderCode, fragShaderModule);
+		vertShaderModule = createShaderModule(vertShaderCode);
+		fragShaderModule = createShaderModule(fragShaderCode);
 
 		// vertex shader create info assignment
 		VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
@@ -656,7 +624,7 @@ namespace PlanetVulkanEngine
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
 		// create graphics pipeline layout
-		if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutInfo, nullptr,pipelineLayout.replace()) != VK_SUCCESS) 
+		if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutInfo, nullptr,&pipelineLayout) != VK_SUCCESS) 
 		{
 			throw std::runtime_error("Failed to create pipeline layout!");
 		}
@@ -683,7 +651,7 @@ namespace PlanetVulkanEngine
 		pipelineInfo.subpass = 0;
 
 		// create graphics pipeline
-		if (vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, graphicsPipeline.replace()) != VK_SUCCESS) 
+		if (vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) 
 		{
 			throw std::runtime_error("Failed to create graphics pipeline!");
 		}
@@ -692,10 +660,13 @@ namespace PlanetVulkanEngine
 			std::cout << "Graphics Pipeline created successfully!" << std::endl;
 		}
 
+		vkDestroyShaderModule(logicalDevice, fragShaderModule, nullptr);
+		vkDestroyShaderModule(logicalDevice, vertShaderModule, nullptr);
+
 
 	}
 
-	void PlanetVulkan::createShaderModule(const std::vector<char>& code, VDeleter<VkShaderModule>& shaderModule)
+	VkShaderModule PlanetVulkan::createShaderModule(const std::vector<char>& code)
 	{
 		VkShaderModuleCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -705,40 +676,16 @@ namespace PlanetVulkanEngine
 		memcpy(codeAligned.data(), code.data(), code.size());
 		createInfo.pCode = codeAligned.data();
 		
-		if (vkCreateShaderModule(logicalDevice, &createInfo, nullptr, shaderModule.replace()) != VK_SUCCESS) 
+		VkShaderModule shaderModule;
+		if (vkCreateShaderModule(logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) 
 		{throw std::runtime_error("failed to create shader module!");}
 		else
 		{std::cout << "Shader created successfully!" << std::endl;}
+
+		return shaderModule;
 	}
 
-	/*
-	void PlanetVulkan::createFramebuffers()
-	{
-		swapChainFramebuffers.resize(swapChainImageViews.size(), VDeleter<VkFramebuffer>{logicalDevice, vkDestroyFramebuffer});
-
-		for (size_t i = 0; i < swapChainImageViews.size(); i++) 
-		{
-			VkImageView attachments[] = {swapChainImageViews[i]};
-
-			VkFramebufferCreateInfo framebufferInfo = {};
-			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = renderPass;
-			framebufferInfo.attachmentCount = 1;
-			framebufferInfo.pAttachments = attachments;
-			framebufferInfo.width = swapChainExtent.width;
-			framebufferInfo.height = swapChainExtent.height;
-			framebufferInfo.layers = 1;
-
-			if (vkCreateFramebuffer(logicalDevice, &framebufferInfo, nullptr, swapChainFramebuffers[i].replace()) != VK_SUCCESS) 
-			{
-				throw std::runtime_error("Failed to create framebuffer!");
-			}
-			
-		}
-
-		std::cout << "Framebuffers created successfully"<<std::endl;
-	}
-	*/
+	
 
 	void PlanetVulkan::createCommandPool()
 	{
@@ -749,7 +696,7 @@ namespace PlanetVulkanEngine
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.queueFamilyIndex = queueFamilyIndices.familyIndex;
 
-		if (vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, commandPool.replace()) != VK_SUCCESS) 
+		if (vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) 
 		{
 			throw std::runtime_error("failed to create command pool!");
 		}
@@ -818,8 +765,8 @@ namespace PlanetVulkanEngine
 		VkSemaphoreCreateInfo semaphoreInfo = {};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-		if (vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, imageAvailableSemaphore.replace()) != VK_SUCCESS ||
-			vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, renderFinishedSemaphore.replace()) != VK_SUCCESS) 
+		if (vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
+			vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS) 
 		{
 
 			throw std::runtime_error("failed to create semaphores!");
