@@ -27,11 +27,10 @@ namespace PlanetVulkanEngine
 		//notify glfw not to use OpenGL context
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		//disable resizing windows
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 		//Initialize the window
 		window = glfwCreateWindow(windowWidth, windowHeight, "Planet Vulkan", nullptr, nullptr);
-
+		glfwSetWindowUserPointer(window, this);
 		return 0;
 	}
-
 }

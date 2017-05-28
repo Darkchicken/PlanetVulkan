@@ -30,8 +30,7 @@ namespace PlanetVulkanEngine
 	*/
 	void PlanetVulkan::initVulkan()
 	{
-		//create window for application
-		windowObj.Create();
+		initWindow();
 		createInstance();
 		setupDebugCallback();
 		createSurface();
@@ -41,13 +40,11 @@ namespace PlanetVulkanEngine
 		swapchain = new PVSwapchain();
 		swapchain->create(&logicalDevice, &physicalDevice, &surface, &windowObj);
 
-		//createSwapChain();
-		//createImageViews();
 		createRenderPass();
 		createGraphicsPipeline();
 
 		swapchain->createFramebuffers(&logicalDevice, &renderPass);
-		//createFramebuffers();
+
 		createCommandPool();
 		createCommandBuffers();
 		createSemaphores();
@@ -57,10 +54,9 @@ namespace PlanetVulkanEngine
 	{
 		vkDeviceWaitIdle(logicalDevice);
 
-		//Create new swapchain and image views
-		swapchain = new PVSwapchain();
-		swapchain->create(&logicalDevice, &physicalDevice, &surface, &windowObj);
+		cleanupSwapChain();
 
+		swapchain->create(&logicalDevice, &physicalDevice, &surface, &windowObj);
 		createRenderPass();
 		createGraphicsPipeline();
 		swapchain->createFramebuffers(&logicalDevice, &renderPass);
@@ -77,7 +73,6 @@ namespace PlanetVulkanEngine
 			glfwPollEvents();
 
 			drawFrame();
-
 		}
 
 		vkDeviceWaitIdle(logicalDevice);
@@ -85,22 +80,29 @@ namespace PlanetVulkanEngine
 		
 	}
 
-	void PlanetVulkan::cleanup()
+	void PlanetVulkan::cleanupSwapChain()
 	{
-		vkDestroySemaphore(logicalDevice, renderFinishedSemaphore, nullptr);
-		vkDestroySemaphore(logicalDevice, imageAvailableSemaphore, nullptr);
-
-		vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
-
 		swapchain->cleanupFrameBuffers();
+
+		vkFreeCommandBuffers(logicalDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
 		vkDestroyPipeline(logicalDevice, graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
 		vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
 
-		swapchain->cleanupImageViews();
+		swapchain->cleanup();
+	}
 
-		swapchain->cleanupSwapchain();
+	void PlanetVulkan::cleanup()
+	{
+		//Clean up swap chain components first
+		cleanupSwapChain();
+
+		vkDestroySemaphore(logicalDevice, renderFinishedSemaphore, nullptr);
+		vkDestroySemaphore(logicalDevice, imageAvailableSemaphore, nullptr);
+
+		vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
+
 		vkDestroyDevice(logicalDevice, nullptr);
 		DestroyDebugReportCallbackEXT(instance, callback, nullptr);
 		vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -109,6 +111,13 @@ namespace PlanetVulkanEngine
 		glfwDestroyWindow(windowObj.window);
 
 		glfwTerminate();
+	}
+
+	void PlanetVulkan::initWindow()
+	{
+		//create window for application
+		windowObj.Create();
+		glfwSetWindowSizeCallback(windowObj.window, PlanetVulkan::onWindowResized);
 	}
 
 	void PlanetVulkan::createInstance()
@@ -361,7 +370,7 @@ namespace PlanetVulkanEngine
 		//returns if nothing else available, only mode guaranteed to be present
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
-
+	/*
 	// chooses resolution of swap chain images, should be about the same as window resolution
 	VkExtent2D PlanetVulkan::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
 	{
@@ -380,6 +389,7 @@ namespace PlanetVulkanEngine
 
 		
 	}
+	*/
 
 	// checks if all requested extensions are available
 	// similar to checkValidationLayerSupport
@@ -769,7 +779,17 @@ namespace PlanetVulkanEngine
 	void PlanetVulkan::drawFrame()
 	{
 		uint32_t imageIndex;
-		vkAcquireNextImageKHR(logicalDevice, *swapchain->GetSwapchain(), std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(logicalDevice, *swapchain->GetSwapchain(), std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) 
+		{
+			recreateSwapChain();
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) 
+		{
+			throw std::runtime_error("Failed to acquire swap chain image!");
+		}
+		
 
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -803,7 +823,15 @@ namespace PlanetVulkanEngine
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &imageIndex;
 
-		vkQueuePresentKHR(displayQueue, &presentInfo);
+		result = vkQueuePresentKHR(displayQueue, &presentInfo);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) 
+		{
+			recreateSwapChain();
+		}
+		else if (result != VK_SUCCESS) 
+		{
+			throw std::runtime_error("failed to present swap chain image!");
+		}
 
 	}
 

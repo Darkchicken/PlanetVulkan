@@ -62,6 +62,15 @@ namespace PlanetVulkanEngine
 
 
 	private:
+		static void onWindowResized(GLFWwindow* window, int width, int height)
+		{
+			if (width == 0 || height == 0) return;
+
+			PlanetVulkan* app = reinterpret_cast<PlanetVulkan*>(glfwGetWindowUserPointer(window));
+			app->recreateSwapChain();
+		}
+
+		void initWindow();
 		// creates a Vulkan instance
 		void createInstance();
 		// gets necessary extensions to create instance
@@ -85,12 +94,11 @@ namespace PlanetVulkanEngine
 		// choose a present mode for the swap chain
 		VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes);
 		// choose a swap Extent for the swap chain
-		VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+		//VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 		// checks for extension support
 		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 		// creates logical device from selected physical device
 		void createLogicalDevice();	
-		
 		// create render pass
 		void createRenderPass();
 		// creates the grahpics pipeline
@@ -109,6 +117,8 @@ namespace PlanetVulkanEngine
 		void createSemaphores();
 		// Recreates swap chain
 		void recreateSwapChain();
+		//Cleans up components of swapchain
+		void cleanupSwapChain();
 		//cleans up at end of game loop
 		void cleanup();
 

@@ -13,8 +13,13 @@ namespace PlanetVulkanEngine
 	{
 		
 	}
-	void PVSwapchain::cleanupSwapchain()
+
+	void PVSwapchain::cleanup()
 	{
+		for (size_t i = 0; i < swapChainImageViews.size(); i++)
+		{
+			vkDestroyImageView(*device, swapChainImageViews[i], VK_NULL_HANDLE);
+		}
 		vkDestroySwapchainKHR(*device, swapChain, VK_NULL_HANDLE);
 	}
 
@@ -26,13 +31,6 @@ namespace PlanetVulkanEngine
 		}
 	}
 
-	void PVSwapchain::cleanupImageViews()
-	{
-		for (size_t i = 0; i < swapChainImageViews.size(); i++) 
-		{
-			vkDestroyImageView(*device, swapChainImageViews[i], VK_NULL_HANDLE);
-		}
-	}
 
 	void PVSwapchain::create(const VkDevice* logicalDevice, VkPhysicalDevice* physicalDevice, const VkSurfaceKHR* surface, Window* windowObj)
 	{
@@ -201,8 +199,10 @@ namespace PlanetVulkanEngine
 		}
 		else
 		{
+			int width, height;
+			glfwGetWindowSize(windowObj.window, &width, &height);
 			// find the extent that fits the window best between max and min image extent
-			VkExtent2D actualExtent = { windowObj.windowWidth, windowObj.windowHeight };
+			VkExtent2D actualExtent = { width, height };
 			actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
 			actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
 			return actualExtent;
