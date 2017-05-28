@@ -11,19 +11,30 @@ namespace PlanetVulkanEngine
 
 	PVSwapchain::~PVSwapchain()
 	{
-		delete device;
+		
 	}
-	void PVSwapchain::clear()
+	void PVSwapchain::cleanupSwapchain()
 	{
-		for (uint32_t i = 0; i < swapChainFramebuffers.size(); i++)
-		{
-			vkDestroyFramebuffer(*device, swapChainFramebuffers[i], VK_NULL_HANDLE);
-			vkDestroyImageView(*device, swapChainImageViews[i], VK_NULL_HANDLE);
-		}
 		vkDestroySwapchainKHR(*device, swapChain, VK_NULL_HANDLE);
 	}
 
-	bool PVSwapchain::create(const VkDevice* logicalDevice, VkPhysicalDevice* physicalDevice, const VkSurfaceKHR* surface, Window* windowObj)
+	void PVSwapchain::cleanupFrameBuffers()
+	{
+		for (size_t i = 0; i < swapChainFramebuffers.size(); i++)
+		{
+			vkDestroyFramebuffer(*device, swapChainFramebuffers[i], VK_NULL_HANDLE);
+		}
+	}
+
+	void PVSwapchain::cleanupImageViews()
+	{
+		for (size_t i = 0; i < swapChainImageViews.size(); i++) 
+		{
+			vkDestroyImageView(*device, swapChainImageViews[i], VK_NULL_HANDLE);
+		}
+	}
+
+	void PVSwapchain::create(const VkDevice* logicalDevice, VkPhysicalDevice* physicalDevice, const VkSurfaceKHR* surface, Window* windowObj)
 	{
 		device = logicalDevice;
 		// get support details for the swap chain to pass to helper functions

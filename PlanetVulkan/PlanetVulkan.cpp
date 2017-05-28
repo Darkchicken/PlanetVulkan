@@ -92,23 +92,15 @@ namespace PlanetVulkanEngine
 
 		vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
 
-		/*
-		for (size_t i = 0; i < swapChainFramebuffers.size(); i++) 
-		{
-			vkDestroyFramebuffer(device, swapChainFramebuffers[i], nullptr);
-		}
-		*/
+		swapchain->cleanupFrameBuffers();
 
 		vkDestroyPipeline(logicalDevice, graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
 		vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
-		/*
-		for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-			vkDestroyImageView(device, swapChainImageViews[i], nullptr);
-		}
-		*/
 
-		swapchain->clear();
+		swapchain->cleanupImageViews();
+
+		swapchain->cleanupSwapchain();
 		vkDestroyDevice(logicalDevice, nullptr);
 		DestroyDebugReportCallbackEXT(instance, callback, nullptr);
 		vkDestroySurfaceKHR(instance, surface, nullptr);

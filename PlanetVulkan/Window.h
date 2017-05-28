@@ -19,8 +19,8 @@ namespace PlanetVulkanEngine
 		GLFWwindow* window;
 
 		//dimensions for window
-		const int windowWidth = 800;
-		const int windowHeight = 600;
+		const uint32_t windowWidth = 800;
+		const uint32_t windowHeight = 600;
 
 	private:
 		
