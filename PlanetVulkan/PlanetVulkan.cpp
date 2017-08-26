@@ -11,6 +11,7 @@ Handles engine code
 #include <cstring>
 #include <map>
 #include <algorithm>
+#include "PVVertex.h"
 
 namespace PlanetVulkanEngine
 {
@@ -23,6 +24,7 @@ namespace PlanetVulkanEngine
 	PlanetVulkan::~PlanetVulkan()
 	{
 		delete swapchain;
+		delete vertexBuffer;
 	}
 
 	/*
@@ -46,6 +48,10 @@ namespace PlanetVulkanEngine
 		swapchain->createFramebuffers(&logicalDevice, &renderPass);
 
 		createCommandPool();
+		//Create new vertex buffer
+		vertexBuffer = new PVVertexBuffer();
+		vertexBuffer->create(&logicalDevice, &physicalDevice);
+
 		createCommandBuffers();
 		createSemaphores();
 	}
@@ -98,6 +104,9 @@ namespace PlanetVulkanEngine
 		//Clean up swap chain components first
 		cleanupSwapChain();
 
+		//Clean up vertex buffer
+		vertexBuffer->cleanup(&logicalDevice);
+
 		vkDestroySemaphore(logicalDevice, renderFinishedSemaphore, nullptr);
 		vkDestroySemaphore(logicalDevice, imageAvailableSemaphore, nullptr);
 
@@ -117,6 +126,7 @@ namespace PlanetVulkanEngine
 	{
 		//create window for application
 		windowObj.Create();
+		glfwSetWindowUserPointer(windowObj.window, this);
 		glfwSetWindowSizeCallback(windowObj.window, PlanetVulkan::onWindowResized);
 	}
 
@@ -554,8 +564,12 @@ namespace PlanetVulkanEngine
 		// Vertex input struct
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
+		auto bindingDescription = Vertex::getBindingDescription();
+		auto attributeDescriptions = Vertex::getAttributeDescriptions();
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 		 // input assembly struct
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
@@ -748,8 +762,11 @@ namespace PlanetVulkanEngine
 			vkCmdBeginRenderPass(commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+			VkBuffer vertexBuffers[] = { *vertexBuffer->GetVertexBuffer() };
+			VkDeviceSize offsets[] = {0};
+			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
-			vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+			vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(vertexBuffer->GetVerticesSize()), 1, 0, 0);
 
 			vkCmdEndRenderPass(commandBuffers[i]);
 

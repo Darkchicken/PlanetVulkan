@@ -30,7 +30,6 @@ namespace PlanetVulkanEngine
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 		//Initialize the window
 		window = glfwCreateWindow(windowWidth, windowHeight, "Planet Vulkan", nullptr, nullptr);
-		glfwSetWindowUserPointer(window, this);
 		return 0;
 	}
 }

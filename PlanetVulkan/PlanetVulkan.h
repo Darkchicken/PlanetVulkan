@@ -12,6 +12,7 @@ Copyright © 2017, Josh Shucker
 #include "Window.h"
 #include "VDeleter.h"
 #include "PVSwapchain.h"
+#include "PVVertexBuffer.h"
 namespace PlanetVulkanEngine
 {
 	// read binary data from SPIR-V file
@@ -148,6 +149,8 @@ namespace PlanetVulkanEngine
 		
 		// handle to command pool
 		VkCommandPool commandPool;
+		//Pointer to the vertex buffer object
+		PVVertexBuffer* vertexBuffer;
 		// vector of handles to command buffers
 		std::vector<VkCommandBuffer> commandBuffers;
 		// semaphore for when an image is available to render
