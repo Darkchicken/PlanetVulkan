@@ -7,12 +7,13 @@ namespace PlanetVulkanEngine
 	struct QueueFamilyIndices
 	{
 		//index of respective graphics family
-		int familyIndex = -1;
+		int graphicsFamily = -1;
+		int transferFamily = -1;
 
 		//returns true if an index has been assigned
 		bool isComplete()
 		{
-			return familyIndex >= 0;
+			return graphicsFamily >= 0 && transferFamily >=0;
 		}
 	};
 	// find queue families of a physical device

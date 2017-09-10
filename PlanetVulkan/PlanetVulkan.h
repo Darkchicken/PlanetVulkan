@@ -119,6 +119,8 @@ namespace PlanetVulkanEngine
 		VkDevice logicalDevice;
 		// handle to the graphics queue 
 		VkQueue displayQueue;
+		// handle to the transfer queue
+		VkQueue transferQueue;
 		// Pointer to the swapchain object
 		PVSwapchain* swapchain;
 
@@ -131,8 +133,8 @@ namespace PlanetVulkanEngine
 		
 		// Pointer to command pool object
 		PVCommandPool* commandPool;
-		// Pointer to the command pool for temp objects
-		PVCommandPool* tempCommandPool;
+		// Pointer to the command pool for transfer commands
+		PVCommandPool* transferCommandPool;
 		//Pointer to the vertex buffer object
 		PVVertexBuffer* vertexBuffer;
 		// vector of handles to command buffers

@@ -6,13 +6,11 @@ namespace PlanetVulkanEngine
 	{
 	public:
 		PVVertexBuffer();
-		PVVertexBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, VkCommandPool* tempCommandPool, 
-			/*TODO: change this when you make new transfer queue*/ const VkQueue* displayQueue);
+			VkCommandPool* transferCommandPool, const VkQueue* transferQueue);
 		~PVVertexBuffer();
 
 		//creates the vertex buffer
-		void CreateVertexBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, VkCommandPool* tempCommandPool,
-			/*TODO: change this when you make new transfer queue*/ const VkQueue* displayQueue);
+			VkCommandPool* transferCommandPool, const VkQueue* transferQueue);
 		void CleanupVertexBuffer(const VkDevice * logicalDevice);
 
 		const std::vector<Vertex> vertices =
@@ -27,8 +25,8 @@ namespace PlanetVulkanEngine
 		uint32_t GetVerticesSize() { return vertices.size(); }
 
 	private:
-		void copyBuffer(const VkDevice * logicalDevice, const VkCommandPool* tempCommandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size,
-			/*TODO: change this when you make new transfer queue*/ const VkQueue* displayQueue);
+		void copyBuffer(const VkDevice * logicalDevice, const VkCommandPool* transferCommandPool,
+			VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, const VkQueue* transferQueue);
 
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;

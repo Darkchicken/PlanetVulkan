@@ -7,10 +7,10 @@ namespace PlanetVulkanEngine
 	{
 	}
 
-	PVVertexBuffer::PVVertexBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, VkCommandPool* tempCommandPool,
-		/*TODO: change this when you make new transfer queue*/ const VkQueue* displayQueue)
+	PVVertexBuffer::PVVertexBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, const VkSurfaceKHR* surface,
+		VkCommandPool* transferCommandPool, const VkQueue* transferQueue)
 	{
-		CreateVertexBuffer(logicalDevice, physicalDevice, tempCommandPool, /*TODO: change this when you make new transfer queue*/ displayQueue);
+		CreateVertexBuffer(logicalDevice, physicalDevice, surface, transferCommandPool, transferQueue);
 	}
 
 
@@ -18,15 +18,15 @@ namespace PlanetVulkanEngine
 	{
 	}
 
-	void PVVertexBuffer::CreateVertexBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, VkCommandPool* tempCommandPool,
-		/*TODO: change this when you make new transfer queue*/ const VkQueue* displayQueue)
+	void PVVertexBuffer::CreateVertexBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, 
+		const VkSurfaceKHR* surface, VkCommandPool* transferCommandPool, const VkQueue* transferQueue)
 	{
 		VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
 
-		createBuffer(logicalDevice, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+		createBuffer(logicalDevice, physicalDevice, surface, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 		//Copy vertex data to buffer
@@ -35,10 +35,10 @@ namespace PlanetVulkanEngine
 		memcpy(data, vertices.data(), (size_t)bufferSize);
 		vkUnmapMemory(*logicalDevice, stagingBufferMemory);
 
-		createBuffer(logicalDevice, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		createBuffer(logicalDevice, physicalDevice, surface, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
 
-		copyBuffer(logicalDevice, tempCommandPool, stagingBuffer, vertexBuffer, bufferSize,/*TODO: change this when you make new transfer queue*/ displayQueue);
+		copyBuffer(logicalDevice, transferCommandPool, stagingBuffer, vertexBuffer, bufferSize, transferQueue);
 
 		vkDestroyBuffer(*logicalDevice, stagingBuffer, nullptr);
 		vkFreeMemory(*logicalDevice, stagingBufferMemory, nullptr);
@@ -49,14 +49,14 @@ namespace PlanetVulkanEngine
 		cleanupBuffer(logicalDevice, vertexBuffer, vertexBufferMemory);
 	}
 
-	void PVVertexBuffer::copyBuffer(const VkDevice * logicalDevice, const VkCommandPool* tempCommandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, 
-		/*TODO: change this when you make new transfer queue*/ const VkQueue* displayQueue)
+	void PVVertexBuffer::copyBuffer(const VkDevice * logicalDevice, const VkCommandPool* transferCommandPool, 
+		VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, const VkQueue* transferQueue)
 	{	
 		//Make a temporary command buffer for the memory transfer operation
 		VkCommandBufferAllocateInfo allocInfo = {};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandPool = *tempCommandPool;
+		allocInfo.commandPool = *transferCommandPool;
 		allocInfo.commandBufferCount = 1;
 		
 
@@ -79,10 +79,10 @@ namespace PlanetVulkanEngine
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffer;
 
-		vkQueueSubmit(*displayQueue, 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(*displayQueue);
+		vkQueueSubmit(*transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(*transferQueue);
 
-		vkFreeCommandBuffers(*logicalDevice, *tempCommandPool, 1, &commandBuffer);
+		vkFreeCommandBuffers(*logicalDevice, *transferCommandPool, 1, &commandBuffer);
 
 	}
 }

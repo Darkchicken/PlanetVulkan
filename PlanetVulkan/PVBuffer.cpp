@@ -1,5 +1,5 @@
 #include "PVBuffer.h"
-
+#include "PVQueueFamily.h"
 namespace PlanetVulkanEngine
 {
 
@@ -12,15 +12,20 @@ namespace PlanetVulkanEngine
 	{
 	}
 
-	void PVBuffer::createBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, VkDeviceSize size, 
-		VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
+	void PVBuffer::createBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, const VkSurfaceKHR* surface, 
+		VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
 	{
 		VkBufferCreateInfo bufferInfo = {};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.size = size;
 		bufferInfo.usage = usage;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
 
+		QueueFamilyIndices indices = FindQueueFamilies(physicalDevice, surface);
+		uint32_t indicesArray[] = {static_cast<uint32_t>( indices.graphicsFamily), static_cast<uint32_t>( indices.transferFamily)};
+		bufferInfo.pQueueFamilyIndices = indicesArray;
+		bufferInfo.queueFamilyIndexCount = 2;
+	
 		if (vkCreateBuffer(*logicalDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create buffer");

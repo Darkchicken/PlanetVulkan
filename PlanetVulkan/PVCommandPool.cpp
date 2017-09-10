@@ -8,9 +8,9 @@ namespace PlanetVulkanEngine
 	}
 
 	PVCommandPool::PVCommandPool(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, 
-		const VkSurfaceKHR* surface, VkCommandPoolCreateFlags flags /* = 0 */ )
+		const VkSurfaceKHR* surface, uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags /* = 0 */ )
 	{
-		createCommandPool(logicalDevice, physicalDevice, surface, flags);
+		createCommandPool(logicalDevice, physicalDevice, surface, queueFamilyIndex, flags);
 	}
 
 	PVCommandPool::~PVCommandPool()
@@ -23,13 +23,13 @@ namespace PlanetVulkanEngine
 	}
 
 	void PVCommandPool::createCommandPool(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, 
-		const VkSurfaceKHR* surface, VkCommandPoolCreateFlags flags)
+		const VkSurfaceKHR* surface, uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags)
 	{
 		QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(physicalDevice, surface);
 
 		VkCommandPoolCreateInfo poolInfo = {};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.queueFamilyIndex = queueFamilyIndices.familyIndex;
+		poolInfo.queueFamilyIndex = queueFamilyIndex;
 		poolInfo.flags = flags;
 
 		if (vkCreateCommandPool(*logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)

@@ -11,6 +11,7 @@ Handles engine code
 #include <cstring>
 #include <map>
 #include <algorithm>
+#include <set>
 #include "PVVertex.h"
 
 namespace PlanetVulkanEngine
@@ -25,7 +26,7 @@ namespace PlanetVulkanEngine
 	{
 		delete swapchain;
 		delete commandPool;
-		delete tempCommandPool;
+		delete transferCommandPool;
 		delete vertexBuffer;
 	}
 
@@ -49,11 +50,10 @@ namespace PlanetVulkanEngine
 
 		swapchain->createFramebuffers(&logicalDevice, &renderPass);
 
-		commandPool = new PVCommandPool(&logicalDevice, &physicalDevice, &surface);
-		tempCommandPool = new PVCommandPool(&logicalDevice, &physicalDevice, &surface, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+		QueueFamilyIndices indices = FindQueueFamilies(&physicalDevice, &surface);
+		commandPool = new PVCommandPool(&logicalDevice, &physicalDevice, &surface, indices.graphicsFamily);
+		transferCommandPool = new PVCommandPool(&logicalDevice, &physicalDevice, &surface, indices.transferFamily, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
 		//Create new vertex buffer
-		vertexBuffer = new PVVertexBuffer(&logicalDevice, &physicalDevice, tempCommandPool->GetCommandPool(),
-			/*TODO: change this when you make new transfer queue*/ &displayQueue);
 
 		createCommandBuffers();
 		createSemaphores();
@@ -114,7 +114,7 @@ namespace PlanetVulkanEngine
 		vkDestroySemaphore(logicalDevice, imageAvailableSemaphore, nullptr);
 
 		commandPool->Cleanup(&logicalDevice);
-		tempCommandPool->Cleanup(&logicalDevice);
+		transferCommandPool->Cleanup(&logicalDevice);
 		
 		vkDestroyDevice(logicalDevice, nullptr);
 		DestroyDebugReportCallbackEXT(instance, callback, nullptr);
@@ -416,24 +416,27 @@ namespace PlanetVulkanEngine
 	{
 		QueueFamilyIndices indices = FindQueueFamilies(&physicalDevice, &surface);
 
-		VkDeviceQueueCreateInfo queueCreateInfo = {};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.pNext = nullptr;
-		queueCreateInfo.flags = 0;
-		queueCreateInfo.queueFamilyIndex = indices.familyIndex;
-		queueCreateInfo.queueCount = 1;
+		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+		std::set<int> uniqueQueueFamilies = { indices.graphicsFamily, indices.transferFamily };
+
 		const float queuePriority = 1.0f;
-		queueCreateInfo.pQueuePriorities = &queuePriority;
+		for (int queueFamily : uniqueQueueFamilies)
+		{
+			VkDeviceQueueCreateInfo queueCreateInfo = {};
+			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			queueCreateInfo.queueFamilyIndex = queueFamily;
+			queueCreateInfo.queueCount = 1;
+			queueCreateInfo.pQueuePriorities = &queuePriority;
+			queueCreateInfos.push_back(queueCreateInfo);
+		}
 
 		// currently not initialized since we dont need certain features
 		VkPhysicalDeviceFeatures deviceFeatures = {};
 
 		VkDeviceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		createInfo.pNext = nullptr;
-		createInfo.flags = 0;
-		createInfo.queueCreateInfoCount = 1;
-		createInfo.pQueueCreateInfos = &queueCreateInfo;
+		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());;
+		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 		if (enableValidationLayers)
 		{
 			createInfo.enabledLayerCount = validationLayers.size();
@@ -453,7 +456,9 @@ namespace PlanetVulkanEngine
 		else
 		{std::cout << "Logical device created successfully" << std::endl;}	
 		// get handle to graphics queue
-		vkGetDeviceQueue(logicalDevice, indices.familyIndex ,0, &displayQueue);
+		vkGetDeviceQueue(logicalDevice, indices.graphicsFamily ,0, &displayQueue);
+		//get handle to transfer queue
+		vkGetDeviceQueue(logicalDevice, indices.transferFamily, 0, &transferQueue);
 	}
 	
 	void PlanetVulkan::createRenderPass()
