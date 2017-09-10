@@ -54,6 +54,7 @@ namespace PlanetVulkanEngine
 		commandPool = new PVCommandPool(&logicalDevice, &physicalDevice, &surface, indices.graphicsFamily);
 		transferCommandPool = new PVCommandPool(&logicalDevice, &physicalDevice, &surface, indices.transferFamily, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
 		//Create new vertex buffer
+		vertexBuffer = new PVVertexBuffer(&logicalDevice, &physicalDevice, &surface, transferCommandPool->GetCommandPool(), &transferQueue);
 
 		createCommandBuffers();
 		createSemaphores();

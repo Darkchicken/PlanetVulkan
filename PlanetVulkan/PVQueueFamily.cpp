@@ -13,13 +13,19 @@ namespace PlanetVulkanEngine
 		// iterate through queue families to find one that supports VK_QUEUE_GRAPHICS_BIT
 		int i = 0;
 		for (const auto &queueFamily : queueFamilies)
-		{
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(*physicalDevice, i, *surface, &presentSupport);
+		{	
 			//check for graphics and presentation support
-			if (queueFamily.queueCount > 0 && queueFamily.queueFlags && VK_QUEUE_GRAPHICS_BIT && presentSupport)
+			if (queueFamily.queueCount > 0 && queueFamily.queueFlags && VK_QUEUE_GRAPHICS_BIT)
 			{
-				indices.familyIndex = i;
+				VkBool32 presentSupport = false;
+				vkGetPhysicalDeviceSurfaceSupportKHR(*physicalDevice, i, *surface, &presentSupport);
+				if(presentSupport)
+					indices.graphicsFamily = i;
+			}
+			//check for transfer support
+			if (queueFamily.queueCount > 0 && queueFamily.queueFlags && VK_QUEUE_TRANSFER_BIT)
+			{
+				indices.transferFamily = i;
 			}
 
 			if (indices.isComplete())

@@ -6,10 +6,12 @@ namespace PlanetVulkanEngine
 	{
 	public:
 		PVVertexBuffer();
+		PVVertexBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, const VkSurfaceKHR* surface,
 			VkCommandPool* transferCommandPool, const VkQueue* transferQueue);
 		~PVVertexBuffer();
 
 		//creates the vertex buffer
+		void CreateVertexBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, const VkSurfaceKHR* surface,
 			VkCommandPool* transferCommandPool, const VkQueue* transferQueue);
 		void CleanupVertexBuffer(const VkDevice * logicalDevice);
 
