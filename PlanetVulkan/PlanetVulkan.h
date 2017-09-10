@@ -13,6 +13,8 @@ Copyright © 2017, Josh Shucker
 #include "VDeleter.h"
 #include "PVSwapchain.h"
 #include "PVVertexBuffer.h"
+#include "PVCommandPool.h"
+#include "PVQueueFamily.h"
 namespace PlanetVulkanEngine
 {
 	// read binary data from SPIR-V file
@@ -34,20 +36,6 @@ namespace PlanetVulkanEngine
 		file.close();
 		return buffer;
 	}
-
-	//used to store index of a QueueFamily with particular qualities
-	struct QueueFamilyIndices
-	{
-		//index of respective graphics family
-		int familyIndex = -1;
-
-		//returns true if an index has been assigned
-		bool isComplete()
-		{
-			return familyIndex >= 0;
-		}
-	};
-	
 
 	class PlanetVulkan
 	{
@@ -86,8 +74,6 @@ namespace PlanetVulkanEngine
 		void getPhysicalDevices();	
 		// assign a score on how suitable a device is
 		int rateDeviceSuitability(VkPhysicalDevice deviceToRate);
-		// find queue families of a physical device
-		QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 		// find data for the swap chain
 		SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 		// choose a surface format for the swap chain
@@ -106,10 +92,6 @@ namespace PlanetVulkanEngine
 		void createGraphicsPipeline();
 		// creates shader modules for pipeline
 		VkShaderModule createShaderModule(const std::vector<char>& code);
-		// creates framebuffers for swap chain
-		//void createFramebuffers();
-		// create command pool
-		void createCommandPool();
 		// create a command buffer for each framebuffer
 		void createCommandBuffers();
 		// draw a frame
@@ -147,8 +129,10 @@ namespace PlanetVulkanEngine
 		// handle to the graphics pipeline
 		VkPipeline graphicsPipeline;
 		
-		// handle to command pool
-		VkCommandPool commandPool;
+		// Pointer to command pool object
+		PVCommandPool* commandPool;
+		// Pointer to the command pool for temp objects
+		PVCommandPool* tempCommandPool;
 		//Pointer to the vertex buffer object
 		PVVertexBuffer* vertexBuffer;
 		// vector of handles to command buffers

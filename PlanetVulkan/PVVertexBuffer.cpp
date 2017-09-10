@@ -7,80 +7,82 @@ namespace PlanetVulkanEngine
 	{
 	}
 
+	PVVertexBuffer::PVVertexBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, VkCommandPool* tempCommandPool,
+		/*TODO: change this when you make new transfer queue*/ const VkQueue* displayQueue)
+	{
+		CreateVertexBuffer(logicalDevice, physicalDevice, tempCommandPool, /*TODO: change this when you make new transfer queue*/ displayQueue);
+	}
+
 
 	PVVertexBuffer::~PVVertexBuffer()
 	{
 	}
 
-	void PVVertexBuffer::create(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice)
+	void PVVertexBuffer::CreateVertexBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, VkCommandPool* tempCommandPool,
+		/*TODO: change this when you make new transfer queue*/ const VkQueue* displayQueue)
 	{
-		VkBufferCreateInfo bufferInfo = {};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = sizeof(vertices[0]) * vertices.size();
-		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-		if (vkCreateBuffer(*logicalDevice, &bufferInfo, nullptr, &vertexBuffer) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create vertex buffer");
-		}
-		else
-		{
-			std::cout << "Vertex buffer created successfully" << std::endl;
-		}
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
 
-		//Allocate buffer memory
-
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(*logicalDevice, vertexBuffer, &memRequirements);
-
-		VkMemoryAllocateInfo allocateInfo = {};
-		allocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocateInfo.allocationSize = memRequirements.size;
-		allocateInfo.memoryTypeIndex = findMemoryType(*physicalDevice, memRequirements.memoryTypeBits, 
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-		if (vkAllocateMemory(*logicalDevice, &allocateInfo, nullptr, &vertexBufferMemory) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to allocate memory for vertex buffer");
-		}
-		else
-		{
-			std::cout << "Memory allocated for vertex buffer successfully" << std::endl;
-		}
-
-		vkBindBufferMemory(*logicalDevice, vertexBuffer, vertexBufferMemory, 0);
+		createBuffer(logicalDevice, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
 		//Copy vertex data to buffer
 		void* data;
-		vkMapMemory(*logicalDevice, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
-		memcpy(data, vertices.data(), (size_t)bufferInfo.size);
-		vkUnmapMemory(*logicalDevice, vertexBufferMemory);
+		vkMapMemory(*logicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, vertices.data(), (size_t)bufferSize);
+		vkUnmapMemory(*logicalDevice, stagingBufferMemory);
 
+		createBuffer(logicalDevice, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+
+		copyBuffer(logicalDevice, tempCommandPool, stagingBuffer, vertexBuffer, bufferSize,/*TODO: change this when you make new transfer queue*/ displayQueue);
+
+		vkDestroyBuffer(*logicalDevice, stagingBuffer, nullptr);
+		vkFreeMemory(*logicalDevice, stagingBufferMemory, nullptr);
 	}
 
-	void PVVertexBuffer::cleanup(const VkDevice * logicalDevice)
+	void PVVertexBuffer::CleanupVertexBuffer(const VkDevice * logicalDevice)
 	{
-		vkDestroyBuffer(*logicalDevice, vertexBuffer, nullptr);
-		//Free up buffer memory once buffer is destroyed
-		vkFreeMemory(*logicalDevice, vertexBufferMemory, nullptr);
+		cleanupBuffer(logicalDevice, vertexBuffer, vertexBufferMemory);
 	}
 
-	uint32_t PVVertexBuffer::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties)
-	{
-		VkPhysicalDeviceMemoryProperties memProperties;
-		vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+	void PVVertexBuffer::copyBuffer(const VkDevice * logicalDevice, const VkCommandPool* tempCommandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, 
+		/*TODO: change this when you make new transfer queue*/ const VkQueue* displayQueue)
+	{	
+		//Make a temporary command buffer for the memory transfer operation
+		VkCommandBufferAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = *tempCommandPool;
+		allocInfo.commandBufferCount = 1;
+		
 
-		for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
-		{
-			//If typefilter has a bit set to 1 and it contains the properties we indicated
-			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
-			{
-				std::cout << "Valid memory type found for vertex buffer" << std::endl;
-				return i;
-			}
-		}
+		VkCommandBuffer commandBuffer;
+		vkAllocateCommandBuffers(*logicalDevice, &allocInfo, &commandBuffer);
 
-		throw std::runtime_error("Failed to find a valid memory type for vertex buffer");
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+		VkBufferCopy copyRegion = {};
+		copyRegion.size = size;
+		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+		vkEndCommandBuffer(commandBuffer);
+
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		vkQueueSubmit(*displayQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(*displayQueue);
+
+		vkFreeCommandBuffers(*logicalDevice, *tempCommandPool, 1, &commandBuffer);
+
 	}
 }

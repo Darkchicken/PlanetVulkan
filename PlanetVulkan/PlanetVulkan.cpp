@@ -24,6 +24,8 @@ namespace PlanetVulkanEngine
 	PlanetVulkan::~PlanetVulkan()
 	{
 		delete swapchain;
+		delete commandPool;
+		delete tempCommandPool;
 		delete vertexBuffer;
 	}
 
@@ -47,10 +49,11 @@ namespace PlanetVulkanEngine
 
 		swapchain->createFramebuffers(&logicalDevice, &renderPass);
 
-		createCommandPool();
+		commandPool = new PVCommandPool(&logicalDevice, &physicalDevice, &surface);
+		tempCommandPool = new PVCommandPool(&logicalDevice, &physicalDevice, &surface, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
 		//Create new vertex buffer
-		vertexBuffer = new PVVertexBuffer();
-		vertexBuffer->create(&logicalDevice, &physicalDevice);
+		vertexBuffer = new PVVertexBuffer(&logicalDevice, &physicalDevice, tempCommandPool->GetCommandPool(),
+			/*TODO: change this when you make new transfer queue*/ &displayQueue);
 
 		createCommandBuffers();
 		createSemaphores();
@@ -90,7 +93,7 @@ namespace PlanetVulkanEngine
 	{
 		swapchain->cleanupFrameBuffers();
 
-		vkFreeCommandBuffers(logicalDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+		vkFreeCommandBuffers(logicalDevice, *commandPool->GetCommandPool(), static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
 
 		vkDestroyPipeline(logicalDevice, graphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
@@ -105,13 +108,14 @@ namespace PlanetVulkanEngine
 		cleanupSwapChain();
 
 		//Clean up vertex buffer
-		vertexBuffer->cleanup(&logicalDevice);
+		vertexBuffer->CleanupVertexBuffer(&logicalDevice);
 
 		vkDestroySemaphore(logicalDevice, renderFinishedSemaphore, nullptr);
 		vkDestroySemaphore(logicalDevice, imageAvailableSemaphore, nullptr);
 
-		vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
-
+		commandPool->Cleanup(&logicalDevice);
+		tempCommandPool->Cleanup(&logicalDevice);
+		
 		vkDestroyDevice(logicalDevice, nullptr);
 		DestroyDebugReportCallbackEXT(instance, callback, nullptr);
 		vkDestroySurfaceKHR(instance, surface, nullptr);
@@ -251,7 +255,7 @@ namespace PlanetVulkanEngine
 
 		/// adjust score based on queue families 
 		//find an index of a queue family which contiains the necessary commands
-		QueueFamilyIndices indices = findQueueFamilies(deviceToRate);
+		QueueFamilyIndices indices = FindQueueFamilies(&deviceToRate, &surface);
 		//check if the requested extensions are supported
 		bool extensionsSupported = checkDeviceExtensionSupport(deviceToRate);
 		//return a 0 score if this device has no suitable family
@@ -290,30 +294,6 @@ namespace PlanetVulkanEngine
 		return score;
 	}
 
-	QueueFamilyIndices PlanetVulkan::findQueueFamilies(VkPhysicalDevice device)
-	{
-		QueueFamilyIndices indices;
-		uint32_t queueFamilyCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-		// iterate through queue families to find one that supports VK_QUEUE_GRAPHICS_BIT
-		int i = 0;
-		for (const auto &queueFamily : queueFamilies)
-		{
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-			//check for graphics and presentation support
-			if (queueFamily.queueCount > 0 && queueFamily.queueFlags && VK_QUEUE_GRAPHICS_BIT && presentSupport)
-			{indices.familyIndex = i;}
-
-			if (indices.isComplete())
-			{break;}
-			i++;
-		}
-		return indices;
-	}
 
 	// finds swap chain details for current device and returns them
 	SwapChainSupportDetails PlanetVulkan::querySwapChainSupport(VkPhysicalDevice device)
@@ -434,7 +414,7 @@ namespace PlanetVulkanEngine
 
 	void PlanetVulkan::createLogicalDevice()
 	{
-		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+		QueueFamilyIndices indices = FindQueueFamilies(&physicalDevice, &surface);
 
 		VkDeviceQueueCreateInfo queueCreateInfo = {};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -701,35 +681,13 @@ namespace PlanetVulkanEngine
 		return shaderModule;
 	}
 
-	
-
-	void PlanetVulkan::createCommandPool()
-	{
-
-		QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
-
-		VkCommandPoolCreateInfo poolInfo = {};
-		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		poolInfo.queueFamilyIndex = queueFamilyIndices.familyIndex;
-
-		if (vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) 
-		{
-			throw std::runtime_error("failed to create command pool!");
-		}
-		else
-		{
-			std::cout << "Command pool created successfully" << std::endl;
-		}
-
-	}
-
 	void PlanetVulkan::createCommandBuffers()
 	{
 		commandBuffers.resize(swapchain->GetFramebufferSize());//swapChainFramebuffers.size());
 
 		VkCommandBufferAllocateInfo allocInfo = {};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = commandPool;
+		allocInfo.commandPool = *commandPool->GetCommandPool();
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 

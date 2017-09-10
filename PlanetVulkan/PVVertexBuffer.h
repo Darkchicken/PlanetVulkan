@@ -1,18 +1,20 @@
 #pragma once
-#include <vector>
-#include <iostream>
-#include "PVVertex.h"
+#include "PVBuffer.h"
 namespace PlanetVulkanEngine
 {
-	class PVVertexBuffer
+	class PVVertexBuffer:public PVBuffer
 	{
 	public:
 		PVVertexBuffer();
+		PVVertexBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, VkCommandPool* tempCommandPool, 
+			/*TODO: change this when you make new transfer queue*/ const VkQueue* displayQueue);
 		~PVVertexBuffer();
 
 		//creates the vertex buffer
-		void create(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice);
-		void cleanup(const VkDevice * logicalDevice);
+		void CreateVertexBuffer(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, VkCommandPool* tempCommandPool,
+			/*TODO: change this when you make new transfer queue*/ const VkQueue* displayQueue);
+		void CleanupVertexBuffer(const VkDevice * logicalDevice);
+
 		const std::vector<Vertex> vertices =
 		{
 			{ { 0.0f, -0.5f },{ 1.0f, 0.0f, 0.0f } },
@@ -25,7 +27,8 @@ namespace PlanetVulkanEngine
 		uint32_t GetVerticesSize() { return vertices.size(); }
 
 	private:
-		uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
+		void copyBuffer(const VkDevice * logicalDevice, const VkCommandPool* tempCommandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size,
+			/*TODO: change this when you make new transfer queue*/ const VkQueue* displayQueue);
 
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;
