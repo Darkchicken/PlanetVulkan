@@ -10,8 +10,19 @@ namespace PlanetVulkanEngine
 
 		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(*physicalDevice, &queueFamilyCount, queueFamilies.data());
-		// iterate through queue families to find one that supports VK_QUEUE_GRAPHICS_BIT
 		int i = 0;
+		//iterate through queue families to see if one can be chosen as a dedicated transfer queue
+		for (const auto &queueFamily : queueFamilies)
+		{
+			//check for transfer support
+			if (queueFamily.queueCount > 0 && queueFamily.queueFlags && (VK_QUEUE_TRANSFER_BIT & ~VK_QUEUE_GRAPHICS_BIT))
+			{
+				indices.transferFamily = i;
+				break;
+			}
+			i++;
+		}
+		// iterate through queue families to find one that supports VK_QUEUE_GRAPHICS_BIT		
 		for (const auto &queueFamily : queueFamilies)
 		{	
 			//check for graphics and presentation support
@@ -22,8 +33,8 @@ namespace PlanetVulkanEngine
 				if(presentSupport)
 					indices.graphicsFamily = i;
 			}
-			//check for transfer support
-			if (queueFamily.queueCount > 0 && queueFamily.queueFlags && VK_QUEUE_TRANSFER_BIT)
+			//check for transfer support if the transfer index has not been filled
+			if (queueFamily.queueCount > 0 && queueFamily.queueFlags && VK_QUEUE_TRANSFER_BIT && indices.transferFamily == -1)
 			{
 				indices.transferFamily = i;
 			}
