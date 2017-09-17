@@ -51,8 +51,8 @@ namespace PlanetVulkanEngine
 		swapchain->createFramebuffers(&logicalDevice, &renderPass);
 
 		QueueFamilyIndices indices = FindQueueFamilies(&physicalDevice, &surface);
-		commandPool = new PVCommandPool(&logicalDevice, &physicalDevice, &surface, indices.graphicsFamily);
-		transferCommandPool = new PVCommandPool(&logicalDevice, &physicalDevice, &surface, indices.transferFamily, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+		commandPool = new PVCommandPool(&logicalDevice, &physicalDevice, indices.graphicsFamily);
+		transferCommandPool = new PVCommandPool(&logicalDevice, &physicalDevice, indices.transferFamily, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
 		//Create new vertex buffer
 		vertexBuffer = new PVVertexBuffer(&logicalDevice, &physicalDevice, &surface, transferCommandPool->GetCommandPool(), &transferQueue);
 

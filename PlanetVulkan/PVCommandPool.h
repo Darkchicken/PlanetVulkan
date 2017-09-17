@@ -9,7 +9,7 @@ namespace PlanetVulkanEngine
 	public:
 		PVCommandPool();
 		PVCommandPool(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, 
-			const VkSurfaceKHR* surface, uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags = 0);
+			uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags = 0);
 		~PVCommandPool();
 
 		void Cleanup(const VkDevice * logicalDevice);
@@ -20,7 +20,7 @@ namespace PlanetVulkanEngine
 
 	private:
 		void createCommandPool(const VkDevice * logicalDevice, const VkPhysicalDevice * physicalDevice, 
-			const VkSurfaceKHR* surface, uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags);
+			uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags);
 		VkCommandPool commandPool;
 	};
 }
