@@ -108,6 +108,8 @@ namespace PlanetVulkanEngine
 		//Clean up swap chain components first
 		cleanupSwapChain();
 
+		//Clean up index buffer
+		vertexBuffer->CleanupIndexBuffer(&logicalDevice);
 		//Clean up vertex buffer
 		vertexBuffer->CleanupVertexBuffer(&logicalDevice);
 
@@ -730,7 +732,10 @@ namespace PlanetVulkanEngine
 			VkDeviceSize offsets[] = {0};
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
 
-			vkCmdDraw(commandBuffers[i], static_cast<uint32_t>(vertexBuffer->GetVerticesSize()), 1, 0, 0);
+			VkBuffer indexBuffer = *vertexBuffer->GetIndexBuffer();
+			vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0 , VK_INDEX_TYPE_UINT32);
+
+			vkCmdDrawIndexed(commandBuffers[i], static_cast<uint32_t>(vertexBuffer->GetIndicesSize()), 1, 0, 0, 0);
 
 			vkCmdEndRenderPass(commandBuffers[i]);
 
