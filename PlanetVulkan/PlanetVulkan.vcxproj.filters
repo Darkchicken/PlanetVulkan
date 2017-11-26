@@ -39,6 +39,12 @@
     <ClCompile Include="PVQueueFamily.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PVUniformBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PVIndexBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PlanetVulkan.h">
@@ -66,6 +72,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PVQueueFamily.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PVUniformBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PVIndexBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

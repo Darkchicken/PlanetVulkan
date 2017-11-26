@@ -13,10 +13,13 @@ Copyright © 2017, Josh Shucker
 #include "VDeleter.h"
 #include "PVSwapchain.h"
 #include "PVVertexBuffer.h"
+#include "PVIndexBuffer.h"
+#include "PVUniformBuffer.h"
 #include "PVCommandPool.h"
 #include "PVQueueFamily.h"
 namespace PlanetVulkanEngine
 {
+
 	// read binary data from SPIR-V file
 	static std::vector<char> readFile(const std::string& filename)
 	{
@@ -40,6 +43,8 @@ namespace PlanetVulkanEngine
 	class PlanetVulkan
 	{
 	public:
+		
+
 		PlanetVulkan();
 		~PlanetVulkan();
 
@@ -88,6 +93,12 @@ namespace PlanetVulkanEngine
 		void createLogicalDevice();	
 		// create render pass
 		void createRenderPass();
+		//Create the descriptor set layout
+		void createDescriptorSetLayout();
+		//Create the descriptor pool
+		void createDescriptorPool();
+		//Create the descriptor set
+		void createDescriptorSet();
 		// creates the grahpics pipeline
 		void createGraphicsPipeline();
 		// creates shader modules for pipeline
@@ -126,10 +137,16 @@ namespace PlanetVulkanEngine
 
 		// handle to the render pass object
 		VkRenderPass renderPass;
+		// handle to the descriptor set layout
+		VkDescriptorSetLayout descriptorSetLayout;
 		// handle to the graphics pipeline layout
 		VkPipelineLayout pipelineLayout;
 		// handle to the graphics pipeline
 		VkPipeline graphicsPipeline;
+		// handle to the descriptor pool
+		VkDescriptorPool descriptorPool;
+		// handle to the descriptor set
+		VkDescriptorSet descriptorSet;
 		
 		// Pointer to command pool object
 		PVCommandPool* commandPool;
@@ -137,6 +154,10 @@ namespace PlanetVulkanEngine
 		PVCommandPool* transferCommandPool;
 		//Pointer to the vertex buffer object
 		PVVertexBuffer* vertexBuffer;
+		//Pointer to the vertex buffer object
+		PVIndexBuffer* indexBuffer;
+		//Pointer to the uniform buffer object
+		PVUniformBuffer* uniformBuffer;
 		// vector of handles to command buffers
 		std::vector<VkCommandBuffer> commandBuffers;
 		// semaphore for when an image is available to render

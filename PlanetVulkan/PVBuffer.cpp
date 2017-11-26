@@ -83,4 +83,41 @@ namespace PlanetVulkanEngine
 		throw std::runtime_error("Failed to find a valid memory type for buffer");
 	}
 
+	void PVBuffer::copyBuffer(const VkDevice * logicalDevice, const VkCommandPool* transferCommandPool,
+		VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, const VkQueue* transferQueue)
+	{
+		//Make a temporary command buffer for the memory transfer operation
+		VkCommandBufferAllocateInfo allocInfo = {};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = *transferCommandPool;
+		allocInfo.commandBufferCount = 1;
+
+
+		VkCommandBuffer commandBuffer;
+		vkAllocateCommandBuffers(*logicalDevice, &allocInfo, &commandBuffer);
+
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+		VkBufferCopy copyRegion = {};
+		copyRegion.size = size;
+		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+		vkEndCommandBuffer(commandBuffer);
+
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		vkQueueSubmit(*transferQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(*transferQueue);
+
+		vkFreeCommandBuffers(*logicalDevice, *transferCommandPool, 1, &commandBuffer);
+
+	}
+
 }
