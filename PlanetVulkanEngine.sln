@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PlanetVulkan", "PlanetVulkan\PlanetVulkan.vcxproj", "{26ABE118-1971-4E6C-A39E-8A432653501D}"
 EndProject
@@ -18,16 +18,16 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{26ABE118-1971-4E6C-A39E-8A432653501D}.Debug|x64.ActiveCfg = Debug|x64
-		{26ABE118-1971-4E6C-A39E-8A432653501D}.Debug|x64.Build.0 = Debug|x64
+		{26ABE118-1971-4E6C-A39E-8A432653501D}.Debug|x64.ActiveCfg = Debug|Win32
+		{26ABE118-1971-4E6C-A39E-8A432653501D}.Debug|x64.Build.0 = Debug|Win32
 		{26ABE118-1971-4E6C-A39E-8A432653501D}.Debug|x86.ActiveCfg = Debug|Win32
 		{26ABE118-1971-4E6C-A39E-8A432653501D}.Debug|x86.Build.0 = Debug|Win32
 		{26ABE118-1971-4E6C-A39E-8A432653501D}.Release|x64.ActiveCfg = Release|x64
 		{26ABE118-1971-4E6C-A39E-8A432653501D}.Release|x64.Build.0 = Release|x64
 		{26ABE118-1971-4E6C-A39E-8A432653501D}.Release|x86.ActiveCfg = Release|Win32
 		{26ABE118-1971-4E6C-A39E-8A432653501D}.Release|x86.Build.0 = Release|Win32
-		{66F530C5-E4D6-4680-ACF7-42CC80C50B00}.Debug|x64.ActiveCfg = Debug|x64
-		{66F530C5-E4D6-4680-ACF7-42CC80C50B00}.Debug|x64.Build.0 = Debug|x64
+		{66F530C5-E4D6-4680-ACF7-42CC80C50B00}.Debug|x64.ActiveCfg = Debug|Win32
+		{66F530C5-E4D6-4680-ACF7-42CC80C50B00}.Debug|x64.Build.0 = Debug|Win32
 		{66F530C5-E4D6-4680-ACF7-42CC80C50B00}.Debug|x86.ActiveCfg = Debug|Win32
 		{66F530C5-E4D6-4680-ACF7-42CC80C50B00}.Debug|x86.Build.0 = Debug|Win32
 		{66F530C5-E4D6-4680-ACF7-42CC80C50B00}.Release|x64.ActiveCfg = Release|x64
@@ -37,5 +37,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EDA8ECC8-35F3-4363-91C7-646219897F45}
 	EndGlobalSection
 EndGlobal
